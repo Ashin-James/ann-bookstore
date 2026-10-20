@@ -1,0 +1,12 @@
+node_modules/
+.next/
+out/
+build/
+.env
+.env.*
+!.env.example
+.DS_Store
+npm-debug.log*
+docs/screenshots/
+test-results/
+playwright-report/

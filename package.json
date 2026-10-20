@@ -1,0 +1,32 @@
+{
+  "name": "ann-premium-bookstore-demo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "test:unit": "node --test tests/us-localization.test.mjs",
+    "test:e2e": "playwright test",
+    "test": "node --test tests/us-localization.test.mjs && playwright test"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "^4.3.1",
+    "@playwright/test": "^1.64.0",
+    "lucide-react": "^0.468.0",
+    "motion": "^12.0.0",
+    "next": "^15.2.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "^15.2.0",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.7.0"
+  }
+}
