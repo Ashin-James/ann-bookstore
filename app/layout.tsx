@@ -35,6 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <LanguageProvider>
           <AuthProvider>
             <StoreProvider>
+              <div className="demo-banner">A DESIGN DEMO · SAMPLE TITLES AND PRICES · NO REAL PAYMENTS</div>
               <SiteHeader />
               <main>{children}</main>
               <SiteFooter />
