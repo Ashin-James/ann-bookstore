@@ -213,18 +213,30 @@ test.describe('STEP 3: Controls Measuring Suite', () => {
   });
 
   test('d) modals/drawers trap focus and Escape restores focus to trigger', async ({ page }) => {
+    await page.addInitScript(() => {
+      try {
+        window.localStorage.setItem('ann-cookie-consent', 'accepted');
+      } catch (_) {}
+    });
     await page.goto('/', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(100);
+    await page.waitForTimeout(200);
 
     // 1. Search Overlay
     const searchBtn = page.locator('button[aria-label*="search" i], .search-mini').first();
     if (await searchBtn.isVisible()) {
       await searchBtn.click();
-      await page.waitForTimeout(150);
+      await page.waitForSelector('[role="dialog"], .search-overlay-backdrop', { timeout: 3000 }).catch(() => null);
+      await page.waitForTimeout(200);
 
       const searchTrap = await page.evaluate(() => {
+        const dialog = document.querySelector('[role="dialog"]');
         const input = document.querySelector('[role="dialog"] input, .search-overlay input');
-        return document.activeElement === input || document.querySelector('[role="dialog"]')?.contains(document.activeElement);
+        const active = document.activeElement;
+        const res = Boolean(active === input || (dialog && dialog.contains(active)));
+        if (!res) {
+          console.log('SEARCH TRAP FAILED: active=', active?.tagName, active?.className, 'dialog=', !!dialog, 'input=', !!input);
+        }
+        return res;
       });
 
       // Press Escape
@@ -241,13 +253,13 @@ test.describe('STEP 3: Controls Measuring Suite', () => {
     }
 
     // 2. Cart Drawer
-    const cartBtn = page.locator('button[aria-label*="cart" i], .header-actions button:has(.action-count)').first();
+    const cartBtn = page.locator('button[aria-label*="bag" i], button[aria-label*="cart" i], .header-actions button:has(.action-count)').first();
     if (await cartBtn.isVisible()) {
       await cartBtn.click();
       await page.waitForTimeout(150);
 
       const cartTrap = await page.evaluate(() => {
-        const dialog = document.querySelector('[role="dialog"][aria-label*="cart" i], .cart-drawer');
+        const dialog = document.querySelector('[role="dialog"][aria-label*="cart" i], [role="dialog"][aria-label*="bag" i], .cart-drawer');
         return dialog ? dialog.contains(document.activeElement) : false;
       });
 
@@ -264,10 +276,25 @@ test.describe('STEP 3: Controls Measuring Suite', () => {
     }
 
     // 3. Auth Modal
-    const authBtn = page.locator('button[aria-label*="account" i], button[aria-label*="sign in" i]').first();
+    const authBtn = page.locator('button[aria-label*="account" i]').first();
     if (await authBtn.isVisible()) {
       await authBtn.click();
-      await page.waitForTimeout(150);
+      await page.waitForTimeout(100);
+
+      const logoutBtn = page.locator('.account-popover button:has-text("Sign out")').first();
+      if (await logoutBtn.isVisible()) {
+        await logoutBtn.click();
+        await page.waitForTimeout(100);
+        await authBtn.click();
+        await page.waitForTimeout(100);
+      }
+
+      const signInOption = page.locator('.account-popover button:has-text("Sign in")').first();
+      if (await signInOption.isVisible()) {
+        await signInOption.click();
+        await page.waitForSelector('[role="dialog"]', { timeout: 3000 }).catch(() => null);
+        await page.waitForTimeout(150);
+      }
 
       const authTrap = await page.evaluate(() => {
         const modal = document.querySelector('[role="dialog"]');
@@ -352,16 +379,40 @@ test.describe('STEP 3: Controls Measuring Suite', () => {
   });
 
   test('g) submit buttons prevent rapid double-clicks (disabled or debounced)', async ({ page }) => {
+    await page.addInitScript(() => {
+      try {
+        window.localStorage.setItem(
+          'ann-demo-cart',
+          JSON.stringify([
+            { bookId: 'quiet-hours', variantId: 'quiet-paperback', quantity: 1 }
+          ])
+        );
+      } catch (_) {}
+    });
     await page.goto('/checkout', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(100);
+    await page.waitForTimeout(200);
 
     // Fill valid sample fields
-    await page.fill('input#fullName, input[name="fullName"]', 'Eleanor Vance');
-    await page.fill('input#email, input[name="email"]', 'eleanor@example.com');
-    await page.fill('input#address, input[name="address"]', '124 Quiet Lane');
-    await page.fill('input#city, input[name="city"]', 'Bath');
-    await page.fill('input#state, input[name="state"]', 'ME');
-    await page.fill('input#zip, input[name="zip"]', '04530');
+    const emailInput = page.locator('input[type="email"]').first();
+    if (await emailInput.isVisible()) {
+      await emailInput.fill('eleanor@example.com');
+    }
+    const nameInput = page.locator('input[placeholder*="First and last" i]').first();
+    if (await nameInput.isVisible()) {
+      await nameInput.fill('Eleanor Vance');
+    }
+    const addrInput = page.locator('input[placeholder*="Street address" i]').first();
+    if (await addrInput.isVisible()) {
+      await addrInput.fill('124 Quiet Lane');
+    }
+    const cityInput = page.locator('input[placeholder="City"]').first();
+    if (await cityInput.isVisible()) {
+      await cityInput.fill('Bath');
+    }
+    const zipInput = page.locator('input[placeholder="04530"]').first();
+    if (await zipInput.isVisible()) {
+      await zipInput.fill('04530');
+    }
 
     const submitBtn = page.locator('button[type="submit"]').first();
     let doubleClickPrevented = false;

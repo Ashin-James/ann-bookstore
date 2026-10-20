@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Check, ArrowUpRight } from 'lucide-react';
 import { money } from '@/src/config/site.config';
-import { Container } from '@/components/container';
-import { Section } from '@/components/section';
+import Container from '@/components/container';
+import Section from '@/components/section';
 
 type Order = {
   ref: string;

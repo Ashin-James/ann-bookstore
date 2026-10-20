@@ -114,7 +114,7 @@ export default function CartDrawer() {
     >
       <div
         ref={panelRef}
-        className="cart-drawer-panel"
+        className="cart-drawer-panel lifted-shadow"
         onClick={(e) => e.stopPropagation()}
         style={{
           width: '100%',
@@ -122,7 +122,6 @@ export default function CartDrawer() {
           height: '100%',
           backgroundColor: 'var(--paper)',
           borderLeft: '1px solid var(--line)',
-          boxShadow: '-10px 0 35px rgba(0, 0, 0, 0.15)',
           display: 'flex',
           flexDirection: 'column',
           animation: 'slideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1)',

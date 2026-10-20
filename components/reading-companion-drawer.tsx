@@ -14,6 +14,7 @@ import { Cover } from '@/components/book-card';
 import { useStore } from '@/contexts/store-context';
 import { useLanguage } from '@/contexts/language-context';
 import { money } from '@/src/config/site.config';
+import type { Book } from '@/data/books';
 
 interface Message {
   id: string;
@@ -57,10 +58,33 @@ export default function ReadingCompanionDrawer() {
   const triggerRef = useRef<HTMLElement | null>(null);
   const { addToCart } = useStore();
   const { t } = useLanguage();
+  const [showFloatingLauncher, setShowFloatingLauncher] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // Show launcher only after scrolling past the hero section (approx 520px + some buffer)
+      setShowFloatingLauncher(window.scrollY > 520);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     const unsub = companionAI.onProgress(setAiProgress);
     return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    const handleOpenCompanion = (e: Event) => {
+      setIsOpen(true);
+      const custom = e as CustomEvent<{ query?: string }>;
+      if (custom.detail?.query) {
+        setInputValue(custom.detail.query);
+      }
+    };
+    window.addEventListener('open-companion', handleOpenCompanion);
+    return () => window.removeEventListener('open-companion', handleOpenCompanion);
   }, []);
 
   useEffect(() => {
@@ -138,37 +162,39 @@ export default function ReadingCompanionDrawer() {
 
   return (
     <>
-      {/* Floating Trigger Button */}
+      {/* Floating Trigger Button: 48px round icon button hidden until user scrolls past hero */}
       <button
         type="button"
         onClick={() => setIsOpen(true)}
+        className="companion-floating-launcher"
         style={{
           position: 'fixed',
           bottom: 'max(20px, env(safe-area-inset-bottom))',
           right: '20px',
           zIndex: 'var(--z-sticky)',
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '10px',
-          padding: '12px 20px',
+          width: '48px',
+          height: '48px',
+          minWidth: '48px',
           minHeight: '48px',
-          minWidth: '44px',
+          padding: 0,
+          borderRadius: '50%',
           backgroundColor: 'var(--wine)',
           color: '#fff',
-          border: '1px solid rgba(255,255,255,0.2)',
-          borderRadius: '30px',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
           boxShadow: '0 8px 24px rgba(126, 51, 70, 0.35)',
           cursor: 'pointer',
-          fontFamily: 'var(--font-sans)',
-          fontSize: '14px',
-          fontWeight: 500,
-          letterSpacing: '0.02em',
-          transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'opacity 0.25s ease, transform 0.25s ease, background-color 0.2s',
+          opacity: showFloatingLauncher ? 1 : 0,
+          pointerEvents: showFloatingLauncher ? 'auto' : 'none',
+          transform: showFloatingLauncher ? 'scale(1)' : 'scale(0.85) translateY(12px)',
         }}
         aria-label="Open AI Reading Companion"
+        title="AI Reading Companion"
       >
-        <Sparkles size={18} aria-hidden="true" />
-        <span>{t('companionButton')}</span>
+        <Sparkles size={20} aria-hidden="true" style={{ pointerEvents: 'none' }} />
       </button>
 
       {/* Slide-over Drawer Backdrop */}
@@ -178,6 +204,7 @@ export default function ReadingCompanionDrawer() {
           role="dialog"
           aria-modal="true"
           aria-label="Reading Companion"
+          className="reading-companion-drawer"
           style={{
             position: 'fixed',
             inset: 0,
@@ -193,13 +220,13 @@ export default function ReadingCompanionDrawer() {
           <div
             ref={panelRef}
             onClick={(e) => e.stopPropagation()}
+            className="lifted-shadow"
             style={{
               width: '100%',
               maxWidth: '480px',
               height: '100%',
               backgroundColor: 'var(--paper)',
               borderLeft: '1px solid var(--line)',
-              boxShadow: '-12px 0 40px rgba(0, 0, 0, 0.2)',
               display: 'flex',
               flexDirection: 'column',
               animation: 'slideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -303,9 +330,9 @@ export default function ReadingCompanionDrawer() {
                     {m.text}
 
                     {/* Book Recommendations */}
-                    {m.response?.books && m.response.books.length > 0 && (
+                    {m.response?.suggestedBooks && m.response.suggestedBooks.length > 0 && (
                       <div style={{ marginTop: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        {m.response.books.map((book) => {
+                        {m.response.suggestedBooks.map((book: Book) => {
                           const primaryFormat = book.formats[0];
                           return (
                             <div

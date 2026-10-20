@@ -34,7 +34,7 @@ export const heroVariants = {
     transition: {
       delay: i * 0.12,
       duration: motionTokens.duration.normal,
-      ease: [0.2, 0.0, 0, 1.0],
+      ease: [0.2, 0.0, 0, 1.0] as const,
     },
   }),
 };
@@ -57,7 +57,7 @@ export const cardItemVariants = {
     y: 0,
     transition: {
       duration: motionTokens.duration.normal,
-      ease: [0.2, 0.0, 0, 1.0],
+      ease: [0.2, 0.0, 0, 1.0] as const,
     },
   },
 };
@@ -72,7 +72,7 @@ export const drawerVariants = {
   exit: {
     x: '100%',
     opacity: 0,
-    transition: { duration: motionTokens.duration.fast, ease: [0.4, 0.0, 1.0, 1.0] },
+    transition: { duration: motionTokens.duration.fast, ease: [0.4, 0.0, 1.0, 1.0] as const },
   },
 };
 
@@ -97,7 +97,7 @@ export const pageTransitionVariants = {
   animate: {
     opacity: 1,
     y: 0,
-    transition: { duration: motionTokens.duration.fast, ease: [0.2, 0.0, 0, 1.0] },
+    transition: { duration: motionTokens.duration.fast, ease: [0.2, 0.0, 0, 1.0] as const },
   },
   exit: {
     opacity: 0,

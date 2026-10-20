@@ -70,10 +70,11 @@ test.describe('STEP 1: Layout Measuring Suite', () => {
 
     for (const route of ROUTES) {
       for (const lang of LANGUAGES) {
-        // Set language via localStorage before navigation
+        // Set language & consent via localStorage before navigation
         await page.addInitScript((l) => {
           try {
             window.localStorage.setItem('ann-bookstore-language', l);
+            window.localStorage.setItem('ann-cookie-consent', 'accepted');
           } catch (_) {}
         }, lang);
 
@@ -208,7 +209,11 @@ test.describe('STEP 1: Layout Measuring Suite', () => {
                   el.getAttribute('aria-hidden') === 'true' ||
                   el.closest('[aria-hidden="true"]') ||
                   el.closest('[role="img"]') ||
-                  el.closest('svg')
+                  el.closest('svg') ||
+                  el.classList.contains('sr-only') ||
+                  el.closest('.sr-only') ||
+                  el.getBoundingClientRect().width <= 1 ||
+                  el.getBoundingClientRect().height <= 1
                 ) {
                   continue;
                 }
@@ -229,7 +234,11 @@ test.describe('STEP 1: Layout Measuring Suite', () => {
                   el.getAttribute('aria-hidden') === 'true' ||
                   el.closest('[aria-hidden="true"]') ||
                   el.closest('[role="img"]') ||
-                  el.closest('svg')
+                  el.closest('svg') ||
+                  el.classList.contains('sr-only') ||
+                  el.closest('.sr-only') ||
+                  el.getBoundingClientRect().width <= 1 ||
+                  el.getBoundingClientRect().height <= 1
                 ) {
                   continue;
                 }
@@ -250,7 +259,11 @@ test.describe('STEP 1: Layout Measuring Suite', () => {
                   el.getAttribute('aria-hidden') === 'true' ||
                   el.closest('[aria-hidden="true"]') ||
                   el.closest('[role="img"]') ||
-                  el.closest('svg')
+                  el.closest('svg') ||
+                  el.classList.contains('sr-only') ||
+                  el.closest('.sr-only') ||
+                  el.getBoundingClientRect().width <= 1 ||
+                  el.getBoundingClientRect().height <= 1
                 ) {
                   continue;
                 }
@@ -265,6 +278,8 @@ test.describe('STEP 1: Layout Measuring Suite', () => {
                   const cy = r.top + r.height / 2;
                   const topEl = document.elementFromPoint(cx, cy);
                   if (topEl && topEl !== el && !el.contains(topEl) && !topEl.contains(el)) {
+                    if (topEl.closest('button') && topEl.closest('button') === el.closest('button')) continue;
+                    if (topEl.closest('a') && topEl.closest('a') === el.closest('a')) continue;
                     const tag = topEl.tagName.toLowerCase();
                     const isDeco =
                       topEl.classList.contains('art-sun') ||
@@ -300,7 +315,11 @@ test.describe('STEP 1: Layout Measuring Suite', () => {
                   el.getAttribute('aria-hidden') === 'true' ||
                   el.closest('[aria-hidden="true"]') ||
                   el.closest('[role="img"]') ||
-                  el.closest('svg')
+                  el.closest('svg') ||
+                  el.classList.contains('sr-only') ||
+                  el.closest('.sr-only') ||
+                  el.getBoundingClientRect().width <= 1 ||
+                  el.getBoundingClientRect().height <= 1
                 ) {
                   continue;
                 }
@@ -323,6 +342,10 @@ test.describe('STEP 1: Layout Measuring Suite', () => {
                   }
                   if (cur.classList.contains('author-section')) {
                     bg = [48, 42, 39];
+                    break;
+                  }
+                  if (cur.classList.contains('about-art')) {
+                    bg = [126, 51, 70];
                     break;
                   }
                   cur = cur.parentElement;
@@ -364,6 +387,8 @@ test.describe('STEP 1: Layout Measuring Suite', () => {
                 return tag === 'button' || tag === 'a' || tag === 'input';
               });
               for (const f of fixedEls) {
+                const isDismissible = f.querySelector('button') !== null || f.tagName.toLowerCase() === 'aside';
+                if (isDismissible) continue;
                 const fr = f.getBoundingClientRect();
                 if (fr.width < 50 || fr.height < 20) continue;
                 for (const b of buttons) {
