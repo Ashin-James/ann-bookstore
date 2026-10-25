@@ -1,0 +1,189 @@
+{
+  "code": "pt-BR",
+  "negations": [
+    "nao",
+    "nunca",
+    "jamais",
+    "sem",
+    "nenhum"
+  ],
+  "moods": {
+    "lonely": [
+      "solitario",
+      "sozinho",
+      "solidao"
+    ],
+    "sad": [
+      "triste",
+      "tristeza",
+      "luto"
+    ],
+    "reflective": [
+      "reflexivo",
+      "pensativo"
+    ],
+    "nostalgic": [
+      "nostalgico",
+      "saudade",
+      "lembrancas"
+    ],
+    "rainy": [
+      "chuva",
+      "chuvoso",
+      "monsao"
+    ],
+    "cozy": [
+      "aconchegante",
+      "acolhedor",
+      "suave"
+    ],
+    "hopeful": [
+      "esperancoso",
+      "otimista"
+    ],
+    "calm": [
+      "calmo",
+      "tranquilo",
+      "paz"
+    ]
+  },
+  "preferences": {
+    "length": {
+      "short": [
+        "curto",
+        "breve"
+      ],
+      "long": [
+        "longo"
+      ],
+      "medium": [
+        "medio"
+      ]
+    },
+    "format": {
+      "paperback": [
+        "brochura"
+      ],
+      "hardcover": [
+        "capa dura"
+      ],
+      "ebook": [
+        "ebook",
+        "digital"
+      ]
+    },
+    "genre": {
+      "novel": [
+        "romance",
+        "ficcao"
+      ],
+      "essays": [
+        "ensaios",
+        "cartas"
+      ]
+    }
+  },
+  "books": {
+    "quiet-hours": [
+      "the quiet hours",
+      "quiet hours"
+    ],
+    "monsoon-letters": [
+      "monsoon letters",
+      "cartas"
+    ],
+    "small-things": [
+      "a map of small things"
+    ],
+    "room-for-rain": [
+      "a room for rain"
+    ]
+  },
+  "intents": {
+    "greeting": [
+      "ola",
+      "oi",
+      "bom dia",
+      "boa tarde"
+    ],
+    "thanks": [
+      "obrigado",
+      "obrigada",
+      "valeu"
+    ],
+    "goodbye": [
+      "tchau",
+      "ate logo",
+      "adeus"
+    ],
+    "how_are_you": [
+      "como vai",
+      "tudo bem"
+    ],
+    "who_are_you": [
+      "quem e voce"
+    ],
+    "about_ann": [
+      "quem e ann",
+      "sobre ann",
+      "autora"
+    ],
+    "price_delivery": [
+      "preco",
+      "quanto custa",
+      "frete",
+      "entrega"
+    ],
+    "summary_request": [
+      "resumo",
+      "sinopse",
+      "sobre o que e"
+    ],
+    "compare_books": [
+      "comparar",
+      "diferenca"
+    ],
+    "excerpt_request": [
+      "trecho",
+      "capitulo um"
+    ],
+    "add_to_cart": [
+      "adicionar a sacola",
+      "comprar"
+    ],
+    "returns_faq": [
+      "devolucao",
+      "reembolso"
+    ],
+    "small_talk": [
+      "tempo",
+      "livro favorito",
+      "piada"
+    ],
+    "complaint": [
+      "reclamacao",
+      "atraso"
+    ],
+    "off_topic": [
+      "cripto",
+      "futebol"
+    ],
+    "crisis": [
+      "suicidio",
+      "morrer"
+    ],
+    "injection": [
+      "ignore as instrucoes"
+    ]
+  },
+  "clarifying_question": "Gostaria de guiar voce da melhor forma. Procura um romance sereno, ensaios breves ou sugestoes?",
+  "chips": {
+    "novel": "Um romance sereno",
+    "essays": "Ensaios breves",
+    "recommend": "Recomendar livro",
+    "where_to_start": "Por onde começar",
+    "about_ann": "Sobre Ann",
+    "shipping": "Frete e entrega"
+  },
+  "unsupported_notice": "Para portugues, sinta-se a vontade para tocar nas opcoes abaixo."
+}

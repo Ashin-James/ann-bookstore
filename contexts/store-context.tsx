@@ -14,49 +14,60 @@ type Store = {
   addToCart: (bookId: string, variantId: string, openDrawer?: boolean) => void;
   updateQuantity: (variantId: string, quantity: number) => void;
   removeFromCart: (variantId: string) => void;
+  clearCart: () => void;
   lastRemovedItem: CartLine | null;
   undoRemove: () => void;
   toggleWishlist: (bookId: string) => void;
   cartCount: number;
+  ready: boolean;
 };
 
 const StoreContext = createContext<Store | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [cart, setCart] = useState<CartLine[]>([]);
-  const [wishlist, setWishlist] = useState<string[]>([]);
+  const [cart, setCart] = useState<CartLine[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const c = localStorage.getItem('ann-demo-cart');
+      if (c) {
+        const parsed = JSON.parse(c);
+        if (Array.isArray(parsed)) {
+          return parsed.filter(
+            (x) =>
+              books.some((b) => b.id === x.bookId) &&
+              typeof x.variantId === 'string' &&
+              Number.isInteger(x.quantity) &&
+              x.quantity > 0
+          );
+        }
+      }
+    } catch {
+      // Ignore
+    }
+    return [];
+  });
+
+  const [wishlist, setWishlist] = useState<string[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const w = localStorage.getItem('ann-demo-wishlist');
+      if (w) {
+        const parsed = JSON.parse(w);
+        if (Array.isArray(parsed)) {
+          return parsed.filter((id) => books.some((b) => b.id === id));
+        }
+      }
+    } catch {
+      // Ignore
+    }
+    return [];
+  });
+
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [lastRemovedItem, setLastRemovedItem] = useState<CartLine | null>(null);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    try {
-      const c = localStorage.getItem('ann-demo-cart');
-      const w = localStorage.getItem('ann-demo-wishlist');
-      if (c) {
-        const parsed = JSON.parse(c);
-        if (Array.isArray(parsed)) {
-          setCart(
-            parsed.filter(
-              (x) =>
-                books.some((b) => b.id === x.bookId) &&
-                typeof x.variantId === 'string' &&
-                Number.isInteger(x.quantity) &&
-                x.quantity > 0
-            )
-          );
-        }
-      }
-      if (w) {
-        const parsed = JSON.parse(w);
-        if (Array.isArray(parsed)) {
-          setWishlist(parsed.filter((id) => books.some((b) => b.id === id)));
-        }
-      }
-    } catch {
-      localStorage.removeItem('ann-demo-cart');
-      localStorage.removeItem('ann-demo-wishlist');
-    }
     setReady(true);
   }, []);
 
@@ -102,6 +113,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const clearCart = () => {
+    setCart([]);
+    try {
+      localStorage.removeItem('ann-demo-cart');
+    } catch {}
+  };
+
   const undoRemove = useCallback(() => {
     if (lastRemovedItem) {
       setCart((old) => [...old, lastRemovedItem]);
@@ -125,12 +143,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       addToCart,
       updateQuantity,
       removeFromCart,
+      clearCart,
       lastRemovedItem,
       undoRemove,
       toggleWishlist,
       cartCount,
+      ready,
     }),
-    [cart, wishlist, isCartOpen, lastRemovedItem, undoRemove, cartCount]
+    [cart, wishlist, isCartOpen, lastRemovedItem, undoRemove, cartCount, ready]
   );
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

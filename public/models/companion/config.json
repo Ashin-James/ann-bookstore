@@ -1,0 +1,7 @@
+{
+  "model_type": "companion_sentence_transformer",
+  "quantized": true,
+  "embedding_size": 214,
+  "permissive_license": "Apache-2.0",
+  "offline_ready": true
+}

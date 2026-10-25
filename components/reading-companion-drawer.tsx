@@ -44,7 +44,7 @@ export default function ReadingCompanionDrawer() {
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [useNeural, setUseNeural] = useState(false);
+  const [useNeural, _setUseNeural] = useState(false);
   const [, setAiProgress] = useState<AIProgress>({
     status: 'idle',
     progress: 0,
@@ -56,7 +56,7 @@ export default function ReadingCompanionDrawer() {
   const panelRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
   const { addToCart } = useStore();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   useEffect(() => {
     const unsub = companionAI.onProgress(setAiProgress);
@@ -122,8 +122,15 @@ export default function ReadingCompanionDrawer() {
     if (!queryText) setInputValue('');
     setIsTyping(true);
 
+    const delay = companionAI.getNaturalDelay();
     setTimeout(async () => {
-      const response = await companionAI.generateReply(textToSend, useNeural);
+      const response = await companionAI.generateReply(textToSend, useNeural, language);
+
+      // Auto add to cart if requested by user
+      if (response.bookToAddToCart) {
+        addToCart(response.bookToAddToCart.bookId, response.bookToAddToCart.formatId, false);
+      }
+
       const companionMsg: Message = {
         id: (Date.now() + 1).toString(),
         sender: 'companion',
@@ -133,7 +140,7 @@ export default function ReadingCompanionDrawer() {
       };
       setMessages((prev) => [...prev, companionMsg]);
       setIsTyping(false);
-    }, 300);
+    }, delay);
   };
 
   return (
@@ -181,7 +188,7 @@ export default function ReadingCompanionDrawer() {
           style={{
             position: 'fixed',
             inset: 0,
-            zIndex: 'var(--z-drawer)',
+            zIndex: 1000,
             backgroundColor: 'rgba(20, 18, 15, 0.6)',
             backdropFilter: 'blur(5px)',
             display: 'flex',
@@ -303,9 +310,9 @@ export default function ReadingCompanionDrawer() {
                     {m.text}
 
                     {/* Book Recommendations */}
-                    {m.response?.books && m.response.books.length > 0 && (
+                    {m.response?.suggestedBooks && m.response.suggestedBooks.length > 0 && (
                       <div style={{ marginTop: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        {m.response.books.map((book) => {
+                        {m.response.suggestedBooks.map((book) => {
                           const primaryFormat = book.formats[0];
                           return (
                             <div
@@ -322,20 +329,18 @@ export default function ReadingCompanionDrawer() {
                             >
                               <div
                                 style={{
-                                  width: '38px',
-                                  height: '52px',
+                                  width: '44px',
+                                  height: '60px',
                                   flexShrink: 0,
-                                  transform: 'scale(0.22)',
-                                  transformOrigin: 'top left',
-                                  marginRight: '-120px',
-                                  marginBottom: '-160px',
-                                  pointerEvents: 'none',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
                                 }}
                                 aria-hidden="true"
                               >
-                                <Cover book={book} />
+                                <Cover book={book} size="xs" />
                               </div>
-                              <div style={{ flex: 1, minWidth: 0, paddingLeft: '8px' }}>
+                              <div style={{ flex: 1, minWidth: 0 }}>
                                 <strong style={{ fontSize: '15px', display: 'block', color: 'var(--ink)' }}>
                                   {book.title}
                                 </strong>

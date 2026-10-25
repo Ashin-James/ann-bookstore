@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { MapPin } from 'lucide-react';
 import LanguageSwitcher from '@/components/language-switcher';
 import { useLanguage } from '@/contexts/language-context';
 import { SITE_CONFIG } from '@/src/config/site.config';
@@ -14,54 +15,49 @@ export default function SiteFooter() {
       <Container>
         <div className="footer-main">
           <div className="footer-brand-col">
-            <Link href="/" className="footer-wordmark">
+            <Link href="/" className="footer-wordmark" aria-label="Ann Home">
               ANN.
             </Link>
-            <p>{t('footerTagline')}</p>
-            <small
-              style={{
-                display: 'block',
-                marginTop: '12px',
-                color: 'var(--taupe)',
-                fontSize: '14px',
-                lineHeight: 1.5,
-              }}
-            >
-              {SITE_CONFIG.complianceMailingAddress}
-            </small>
-            <div style={{ marginTop: '20px' }}>
-              <LanguageSwitcher />
+            <p className="footer-tagline">{t('footerTagline')}</p>
+
+            <div className="footer-address-pill">
+              <MapPin size={15} style={{ flexShrink: 0, opacity: 0.75 }} aria-hidden="true" />
+              <span>{SITE_CONFIG.complianceMailingAddress}</span>
+            </div>
+
+            <div style={{ marginTop: '24px' }}>
+              <LanguageSwitcher variant="footer" />
             </div>
           </div>
 
           <div className="footer-links">
             <div>
-              <span className="eyebrow">Explore</span>
+              <span className="eyebrow">{t('footerExplore')}</span>
               <Link href="/books">{t('navBooks')}</Link>
               <Link href="/about">{t('navAbout')}</Link>
               <Link href="/journal">{t('navJournal')}</Link>
             </div>
 
             <div>
-              <span className="eyebrow">Need to know</span>
+              <span className="eyebrow">{t('footerNeedToKnow')}</span>
               <Link href="/cart">{t('cartTitle')}</Link>
               <Link href="/wishlist">{t('wishlist')}</Link>
-              <Link href="/account">Reader Account</Link>
-              <Link href="/shipping-returns">Shipping & Returns</Link>
+              <Link href="/account">{t('accountTitle')}</Link>
+              <Link href="/shipping-returns">{t('shippingTitle')}</Link>
             </div>
 
             <div>
-              <span className="eyebrow">Legal & Compliance</span>
-              <Link href="/privacy">Privacy Policy</Link>
-              <Link href="/privacy#your-privacy-choices">Your Privacy Choices</Link>
-              <Link href="/terms">Terms of Sale</Link>
-              <Link href="/accessibility">Accessibility</Link>
+              <span className="eyebrow">{t('footerLegal')}</span>
+              <Link href="/privacy">{t('privacyTitle')}</Link>
+              <Link href="/privacy#your-privacy-choices">{t('privacyTitle')} Choices</Link>
+              <Link href="/terms">{t('termsTitle')}</Link>
+              <Link href="/accessibility">{t('accessibilityTitle')}</Link>
             </div>
           </div>
         </div>
 
         <div className="footer-bottom">
-          <span>© 2026 Ann · An author bookstore concept</span>
+          <span>© 2026 Ann’s Bookstore · Handcrafted Author Imprint · Portland, OR</span>
           <span>{t('footerDemoNote')}</span>
         </div>
       </Container>

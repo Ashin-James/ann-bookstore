@@ -1,0 +1,188 @@
+{
+  "code": "de",
+  "negations": [
+    "nicht",
+    "kein",
+    "nie",
+    "ohne",
+    "weder"
+  ],
+  "moods": {
+    "lonely": [
+      "einsam",
+      "allein",
+      "verlassen"
+    ],
+    "sad": [
+      "traurig",
+      "trauer",
+      "melancholisch"
+    ],
+    "reflective": [
+      "nachdenklich",
+      "besinnlich"
+    ],
+    "nostalgic": [
+      "nostalgisch",
+      "erinnerung"
+    ],
+    "rainy": [
+      "regen",
+      "monsun",
+      "regnerisch"
+    ],
+    "cozy": [
+      "gemutlich",
+      "warm",
+      "sanft"
+    ],
+    "hopeful": [
+      "hoffnungsvoll",
+      "zuversichtlich"
+    ],
+    "calm": [
+      "ruhig",
+      "friedlich",
+      "stille"
+    ]
+  },
+  "preferences": {
+    "length": {
+      "short": [
+        "kurz",
+        "schnell"
+      ],
+      "long": [
+        "lang",
+        "umfangreich"
+      ],
+      "medium": [
+        "mittel"
+      ]
+    },
+    "format": {
+      "paperback": [
+        "taschenbuch"
+      ],
+      "hardcover": [
+        "gebunden"
+      ],
+      "ebook": [
+        "ebook",
+        "digital"
+      ]
+    },
+    "genre": {
+      "novel": [
+        "roman",
+        "fiktion"
+      ],
+      "essays": [
+        "essays",
+        "briefe"
+      ]
+    }
+  },
+  "books": {
+    "quiet-hours": [
+      "the quiet hours",
+      "quiet hours",
+      "sita"
+    ],
+    "monsoon-letters": [
+      "monsoon letters",
+      "briefe"
+    ],
+    "small-things": [
+      "a map of small things",
+      "essays"
+    ],
+    "room-for-rain": [
+      "a room for rain"
+    ]
+  },
+  "intents": {
+    "greeting": [
+      "hallo",
+      "guten tag",
+      "guten morgen"
+    ],
+    "thanks": [
+      "danke",
+      "vielen dank"
+    ],
+    "goodbye": [
+      "tschuss",
+      "auf wiedersehen"
+    ],
+    "how_are_you": [
+      "wie geht es dir",
+      "wie gehts"
+    ],
+    "who_are_you": [
+      "wer bist du",
+      "was bist du"
+    ],
+    "about_ann": [
+      "wer ist ann",
+      "uber ann",
+      "autorin"
+    ],
+    "price_delivery": [
+      "preis",
+      "kosten",
+      "versand",
+      "lieferung"
+    ],
+    "summary_request": [
+      "zusammenfassung",
+      "worum geht es"
+    ],
+    "compare_books": [
+      "vergleichen",
+      "unterschied"
+    ],
+    "excerpt_request": [
+      "leseprobe",
+      "kapitel eins"
+    ],
+    "add_to_cart": [
+      "in den warenkorb",
+      "kaufen"
+    ],
+    "returns_faq": [
+      "ruckgabe",
+      "erstattung"
+    ],
+    "small_talk": [
+      "wetter",
+      "lieblingsbuch",
+      "witz"
+    ],
+    "complaint": [
+      "beschwerde",
+      "beschadigt"
+    ],
+    "off_topic": [
+      "krypto",
+      "fussball"
+    ],
+    "crisis": [
+      "selbstmord",
+      "sterben"
+    ],
+    "injection": [
+      "ignoriere anweisungen"
+    ]
+  },
+  "clarifying_question": "Ich mochte Sie bestmoglich begleiten. Suchen Sie einen ruhigen Roman, Essays oder eine Empfehlung?",
+  "chips": {
+    "novel": "Ein ruhiger Roman",
+    "essays": "Kurze Essays",
+    "recommend": "Buch empfehlen",
+    "where_to_start": "Wo anfangen",
+    "about_ann": "Über Ann",
+    "shipping": "Versandinfo"
+  },
+  "unsupported_notice": "Fur Deutsch wahlen Sie gerne eine der Optionen unten."
+}

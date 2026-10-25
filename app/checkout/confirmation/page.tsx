@@ -96,9 +96,14 @@ export default function Confirmation() {
             <p>No demo order was found in this browser session. You can return to the books and try the flow.</p>
           )}
 
-          <Link className="button button-dark" href="/books">
-            Back to the bookshelf <ArrowUpRight size={16} />
-          </Link>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <Link className="button button-dark" href="/account/orders">
+              View Your Orders in Account Hub <ArrowUpRight size={16} />
+            </Link>
+            <Link className="button button-outline" href="/books">
+              Back to the bookshelf
+            </Link>
+          </div>
           <small>Sample confirmation only · No payment or shipment exists.</small>
         </div>
       </Container>

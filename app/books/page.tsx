@@ -7,6 +7,7 @@ import { books } from '@/data/books';
 import { BookGrid } from '@/components/book-card';
 import Container from '@/components/container';
 import Section from '@/components/section';
+import Reveal from '@/components/reveal';
 
 function BooksContent() {
   const params = useSearchParams();
@@ -35,11 +36,13 @@ function BooksContent() {
   return (
     <Section>
       <Container>
-        <div className="page-intro">
-          <span className="eyebrow">THE BOOKSHELF</span>
-          <h1>A world in <em>every book.</em></h1>
-          <p>Stories, essays, and little pieces of life to take with you.</p>
-        </div>
+        <Reveal variant="fadeUp">
+          <div className="page-intro">
+            <span className="eyebrow">THE BOOKSHELF</span>
+            <h1>A world in <em>every book.</em></h1>
+            <p>Stories, essays, and little pieces of life to take with you.</p>
+          </div>
+        </Reveal>
 
         <div className="catalogue-tools">
           <label className="catalogue-search">
@@ -81,24 +84,26 @@ function BooksContent() {
           {filtered.length} {filtered.length === 1 ? 'book' : 'books'} to discover
         </div>
 
-        {filtered.length ? (
-          <BookGrid items={filtered} />
-        ) : (
-          <div className="empty-state">
-            <h2>No stories found just yet.</h2>
-            <p>Try a different title or clear your filters.</p>
-            <button
-              type="button"
-              className="button button-dark"
-              onClick={() => {
-                setQ('');
-                setCategory('All books');
-              }}
-            >
-              Clear search
-            </button>
-          </div>
-        )}
+        <Reveal variant="fadeUp" delay={0.1}>
+          {filtered.length ? (
+            <BookGrid items={filtered} />
+          ) : (
+            <div className="empty-state">
+              <h2>No stories found just yet.</h2>
+              <p>Try a different title or clear your filters.</p>
+              <button
+                type="button"
+                className="button button-dark"
+                onClick={() => {
+                  setQ('');
+                  setCategory('All books');
+                }}
+              >
+                Clear search
+              </button>
+            </div>
+          )}
+        </Reveal>
       </Container>
     </Section>
   );

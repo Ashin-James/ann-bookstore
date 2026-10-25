@@ -1,0 +1,147 @@
+{
+  "code": "ta",
+  "negations": [
+    "இல்லை",
+    "வேண்டாம்"
+  ],
+  "moods": {
+    "lonely": [
+      "தனிமை"
+    ],
+    "sad": [
+      "வருத்தம்"
+    ],
+    "reflective": [
+      "சிந்தனை"
+    ],
+    "nostalgic": [
+      "நினைவுகள்"
+    ],
+    "rainy": [
+      "மழை"
+    ],
+    "cozy": [
+      "அமைதி"
+    ],
+    "hopeful": [
+      "நம்பிக்கை"
+    ],
+    "calm": [
+      "நிம்மதி"
+    ]
+  },
+  "preferences": {
+    "length": {
+      "short": [
+        "சிறிய"
+      ],
+      "long": [
+        "நீண்ட"
+      ],
+      "medium": [
+        "நடுத்தர"
+      ]
+    },
+    "format": {
+      "paperback": [
+        "தாள் அட்டை"
+      ],
+      "hardcover": [
+        "அட்டை புத்தகம்"
+      ],
+      "ebook": [
+        "மின்னூல்"
+      ]
+    },
+    "genre": {
+      "novel": [
+        "நாவல்"
+      ],
+      "essays": [
+        "கட்டுரைகள்"
+      ]
+    }
+  },
+  "books": {
+    "quiet-hours": [
+      "the quiet hours"
+    ],
+    "monsoon-letters": [
+      "monsoon letters"
+    ],
+    "small-things": [
+      "a map of small things"
+    ],
+    "room-for-rain": [
+      "a room for rain"
+    ]
+  },
+  "intents": {
+    "greeting": [
+      "வணக்கம்",
+      "ஹலோ"
+    ],
+    "thanks": [
+      "நன்றி"
+    ],
+    "goodbye": [
+      "போய் வருகிறேன்"
+    ],
+    "how_are_you": [
+      "எப்படி இருக்கிறீர்கள்"
+    ],
+    "who_are_you": [
+      "நீங்கள் யார்"
+    ],
+    "about_ann": [
+      "ஆன் யார்",
+      "எழுத்தாளர்"
+    ],
+    "price_delivery": [
+      "விலை",
+      "டெலிவரி"
+    ],
+    "summary_request": [
+      "சுருக்கம்"
+    ],
+    "compare_books": [
+      "ஒப்பீடு"
+    ],
+    "excerpt_request": [
+      "பகுதி",
+      "முதல் அத்தியாயம்"
+    ],
+    "add_to_cart": [
+      "வாங்க",
+      "கார்ட்டில் சேர்"
+    ],
+    "returns_faq": [
+      "திரும்பப்பெறுதல்"
+    ],
+    "small_talk": [
+      "வானிலை"
+    ],
+    "complaint": [
+      "புகார்"
+    ],
+    "off_topic": [
+      "கிரிக்கெட்"
+    ],
+    "crisis": [
+      "தற்கொலை"
+    ],
+    "injection": [
+      "விதியை புறக்கணி"
+    ]
+  },
+  "clarifying_question": "உங்களுக்கு பொருத்தமான புத்தகத்தைத் தேர்ந்தெடுக்க உதவலாமா? நாவலா அல்லது கட்டுரைகளா?",
+  "chips": {
+    "novel": "அமைதியான நாவல்",
+    "essays": "சிறிய கட்டுரைகள்",
+    "recommend": "புத்தகம் பரிந்துரை",
+    "where_to_start": "எங்கு தொடங்குவது",
+    "about_ann": "ஆன் பற்றி",
+    "shipping": "டெலிவரி விவரம்"
+  },
+  "unsupported_notice": "தமிழில் கீழேயுள்ள விருப்பங்களைப் பயன்படுத்தவும்."
+}

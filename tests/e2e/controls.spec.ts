@@ -331,15 +331,26 @@ test.describe('STEP 3: Controls Measuring Suite', () => {
     });
 
     // Try submit without required fields
+    const reqInput = page.locator('input[required]').first();
+    if (await reqInput.isVisible()) {
+      await reqInput.fill('');
+    }
     const submitBtn = page.locator('button[type="submit"]').first();
     if (await submitBtn.isVisible()) {
       await submitBtn.click();
       await page.waitForTimeout(100);
 
-      const hasValidation = await page.evaluate(() => {
-        const invalids = document.querySelectorAll(':invalid');
-        return invalids.length > 0;
+      const invalidCount = await page.evaluate(() => {
+        const email = document.querySelector<HTMLInputElement>('#checkout-email');
+        return {
+          emailVal: email?.value,
+          emailReq: email?.required,
+          emailValid: email?.validity.valid,
+          invalidsLen: document.querySelectorAll(':invalid').length,
+          errorsLen: document.querySelectorAll('.field-error, .form-error').length,
+        };
       });
+      const hasValidation = invalidCount.invalidsLen > 0 || invalidCount.errorsLen > 0;
 
       allResults.push({
         route: '/checkout',

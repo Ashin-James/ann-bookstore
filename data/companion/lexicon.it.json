@@ -1,0 +1,185 @@
+{
+  "code": "it",
+  "negations": [
+    "non",
+    "mai",
+    "senza",
+    "nessuno"
+  ],
+  "moods": {
+    "lonely": [
+      "solo",
+      "solitudine",
+      "isolato"
+    ],
+    "sad": [
+      "triste",
+      "tristezza",
+      "dolore"
+    ],
+    "reflective": [
+      "riflessivo",
+      "meditativo"
+    ],
+    "nostalgic": [
+      "nostalgico",
+      "nostalgia",
+      "ricordi"
+    ],
+    "rainy": [
+      "pioggia",
+      "monsone",
+      "piovoso"
+    ],
+    "cozy": [
+      "accogliente",
+      "caldo",
+      "rilassante"
+    ],
+    "hopeful": [
+      "speranzoso",
+      "ottimista"
+    ],
+    "calm": [
+      "calmo",
+      "sereno",
+      "pace"
+    ]
+  },
+  "preferences": {
+    "length": {
+      "short": [
+        "breve",
+        "corto"
+      ],
+      "long": [
+        "lungo"
+      ],
+      "medium": [
+        "medio"
+      ]
+    },
+    "format": {
+      "paperback": [
+        "brossura",
+        "copertina flessibile"
+      ],
+      "hardcover": [
+        "copertina rigida"
+      ],
+      "ebook": [
+        "ebook"
+      ]
+    },
+    "genre": {
+      "novel": [
+        "romanzo"
+      ],
+      "essays": [
+        "saggi",
+        "lettere"
+      ]
+    }
+  },
+  "books": {
+    "quiet-hours": [
+      "the quiet hours",
+      "quiet hours"
+    ],
+    "monsoon-letters": [
+      "monsoon letters",
+      "lettere"
+    ],
+    "small-things": [
+      "a map of small things"
+    ],
+    "room-for-rain": [
+      "a room for rain"
+    ]
+  },
+  "intents": {
+    "greeting": [
+      "ciao",
+      "buongiorno",
+      "buonasera"
+    ],
+    "thanks": [
+      "grazie",
+      "molte grazie"
+    ],
+    "goodbye": [
+      "arrivederci",
+      "addio",
+      "a presto"
+    ],
+    "how_are_you": [
+      "come stai",
+      "come va"
+    ],
+    "who_are_you": [
+      "chi sei",
+      "cosa sei"
+    ],
+    "about_ann": [
+      "chi e ann",
+      "su ann",
+      "autrice"
+    ],
+    "price_delivery": [
+      "prezzo",
+      "quanto costa",
+      "spedizione"
+    ],
+    "summary_request": [
+      "riassunto",
+      "di cosa parla",
+      "trama"
+    ],
+    "compare_books": [
+      "confronta",
+      "differenza"
+    ],
+    "excerpt_request": [
+      "estratto",
+      "primo capitolo"
+    ],
+    "add_to_cart": [
+      "aggiungi al carrello",
+      "compra"
+    ],
+    "returns_faq": [
+      "reso",
+      "rimborso"
+    ],
+    "small_talk": [
+      "tempo",
+      "libro preferito",
+      "battuta"
+    ],
+    "complaint": [
+      "reclamo",
+      "ritardo"
+    ],
+    "off_topic": [
+      "cripto",
+      "calcio"
+    ],
+    "crisis": [
+      "suicidio",
+      "morire"
+    ],
+    "injection": [
+      "ignora istruzioni"
+    ]
+  },
+  "clarifying_question": "Vorrei guidarti al meglio. Cerchi un romanzo rilassante, brevi saggi o un punto di partenza?",
+  "chips": {
+    "novel": "Un romanzo sereno",
+    "essays": "Brevi saggi",
+    "recommend": "Consiglia un libro",
+    "where_to_start": "Da dove iniziare",
+    "about_ann": "Su Ann",
+    "shipping": "Spedizione"
+  },
+  "unsupported_notice": "In italiano puoi usare i comandi rapidi qui sotto."
+}

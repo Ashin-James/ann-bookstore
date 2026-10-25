@@ -42,7 +42,7 @@ export default function CartPage() {
               {lines.map((line) => (
                 <article className="cart-line" key={line.variantId}>
                   <Link href={`/books/${line.book.slug}`} className="cart-cover" aria-label={`View ${line.book.title}`}>
-                    <Cover book={line.book} />
+                    <Cover book={line.book} size="sm" />
                   </Link>
                   <div className="cart-line-info">
                     <span className="eyebrow">{line.book.category}</span>

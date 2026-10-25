@@ -6,26 +6,78 @@ import { books, type Book } from '@/data/books';
 import { money } from '@/src/config/site.config';
 import { useStore } from '@/contexts/store-context';
 
-export function Cover({ book }: { book: Book }) {
+export function Cover({
+  book,
+  size = 'default',
+  className = '',
+}: {
+  book: Book;
+  size?: 'default' | 'sm' | 'xs';
+  className?: string;
+}) {
+  if (size === 'xs') {
+    return (
+      <div
+        className={`book-cover-thumb cover-${book.cover} ${className}`.trim()}
+        aria-label={`Cover artwork for ${book.title}`}
+        role="img"
+      >
+        <div className="book-spine-hinge-thumb" aria-hidden="true" />
+        <div className="book-pages-block-thumb" aria-hidden="true" />
+        <div className="book-linen-texture" aria-hidden="true" />
+        <div className="book-emboss-frame-thumb" aria-hidden="true">
+          <span className="cover-author-thumb">ANN</span>
+          <span className="cover-title-thumb">{book.title}</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (size === 'sm') {
+    return (
+      <div
+        className={`book-cover-sm cover-${book.cover} ${className}`.trim()}
+        aria-label={`Cover artwork for ${book.title}`}
+        role="img"
+      >
+        <div className="book-spine-hinge-sm" aria-hidden="true" />
+        <div className="book-pages-block-sm" aria-hidden="true" />
+        <div className="book-linen-texture" aria-hidden="true" />
+        <div className="book-emboss-frame-sm" aria-hidden="true">
+          <span className="cover-author-sm">ANN</span>
+          <div className="cover-title-sm">{book.title}</div>
+          <div className="cover-rule-sm" />
+          <span className="cover-subtitle-sm">{book.category}</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
-      className={`book-cover cover-${book.cover}`}
+      className={`book-cover cover-${book.cover} ${className}`.trim()}
       aria-label={`Cover artwork for ${book.title}`}
       role="img"
     >
-      <span className="cover-author" aria-hidden="true">
-        ANN
-      </span>
-      <div className="cover-title" aria-hidden="true">
-        {book.title}
+      <div className="book-spine-hinge" aria-hidden="true" />
+      <div className="book-pages-block" aria-hidden="true" />
+      <div className="book-linen-texture" aria-hidden="true" />
+      <div className="book-ribbon-bookmark" aria-hidden="true" />
+      <div className="book-emboss-frame" aria-hidden="true">
+        <span className="cover-author" aria-hidden="true">
+          ANN
+        </span>
+        <div className="cover-title" aria-hidden="true">
+          {book.title}
+        </div>
+        <div className="cover-rule" aria-hidden="true" />
+        <span className="cover-subtitle" aria-hidden="true">
+          {book.note || book.category}
+        </span>
+        <span className="cover-bottom" aria-hidden="true">
+          A STORY BY ANN
+        </span>
       </div>
-      <div className="cover-rule" aria-hidden="true" />
-      <span className="cover-subtitle" aria-hidden="true">
-        {book.note || book.category}
-      </span>
-      <span className="cover-bottom" aria-hidden="true">
-        A STORY BY ANN
-      </span>
     </div>
   );
 }
@@ -41,10 +93,19 @@ export default function BookCard({ book }: { book: Book }) {
         <Link href={`/books/${book.slug}`} aria-label={`View ${book.title}`}>
           <Cover book={book} />
         </Link>
+
+        {/* Hover Literary Excerpt Drawer */}
+        <div className="book-card-excerpt" aria-hidden="true">
+          &ldquo;{book.shortDescription}&rdquo;
+        </div>
+
         <button
           type="button"
           className={`wishlist-button ${isSaved ? 'is-saved' : ''}`}
-          onClick={() => toggleWishlist(book.id)}
+          onClick={(e) => {
+            e.currentTarget.classList.toggle('is-saved');
+            toggleWishlist(book.id);
+          }}
           aria-label={isSaved ? `Remove ${book.title} from wishlist` : `Add ${book.title} to wishlist`}
           style={{ minWidth: '44px', minHeight: '44px' }}
         >
@@ -53,11 +114,11 @@ export default function BookCard({ book }: { book: Book }) {
         <button
           type="button"
           className="quick-add"
-          onClick={() => addToCart(book.id, format.id)}
+          onClick={() => addToCart(book.id, format.id, false)}
           aria-label={`Add ${book.title} to cart`}
           style={{ minHeight: '44px', minWidth: '44px' }}
         >
-          <Plus size={18} aria-hidden="true" />
+          <Plus size={16} aria-hidden="true" />
           <span>Add</span>
         </button>
       </div>

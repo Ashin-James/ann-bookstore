@@ -26,8 +26,10 @@ export default function SearchOverlay({
   useEffect(() => {
     if (isOpen) {
       triggerRef.current = document.activeElement as HTMLElement | null;
-      setTimeout(() => inputRef.current?.focus(), 50);
+      inputRef.current?.focus();
+      const timer = setTimeout(() => inputRef.current?.focus(), 20);
       document.body.style.overflow = 'hidden';
+      return () => clearTimeout(timer);
     } else {
       document.body.style.overflow = '';
       setQuery('');
@@ -111,13 +113,13 @@ export default function SearchOverlay({
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 'var(--z-overlay)',
+        zIndex: 1000,
         backgroundColor: 'rgba(20, 18, 15, 0.65)',
         backdropFilter: 'blur(8px)',
         display: 'flex',
         alignItems: 'flex-start',
         justifyContent: 'center',
-        padding: '60px 16px 20px',
+        padding: 'clamp(80px, 12vh, 120px) 16px 24px',
       }}
     >
       <div
@@ -142,12 +144,15 @@ export default function SearchOverlay({
             alignItems: 'center',
             padding: '12px 16px',
             borderBottom: '1px solid var(--line)',
+            backgroundColor: 'var(--white)',
+            flexShrink: 0,
             gap: '12px',
           }}
         >
           <Search size={20} color="var(--wine)" aria-hidden="true" />
           <input
             ref={inputRef}
+            autoFocus
             type="text"
             value={query}
             onChange={(e) => {
@@ -251,21 +256,19 @@ export default function SearchOverlay({
                   >
                     <div
                       style={{
-                        width: '42px',
-                        height: '58px',
+                        width: '44px',
+                        height: '60px',
                         flexShrink: 0,
-                        transform: 'scale(0.24)',
-                        transformOrigin: 'top left',
-                        marginRight: '-120px',
-                        marginBottom: '-165px',
-                        pointerEvents: 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                       }}
                       aria-hidden="true"
                     >
-                      <Cover book={book} />
+                      <Cover book={book} size="xs" />
                     </div>
 
-                    <div style={{ flex: 1, minWidth: 0, paddingLeft: '8px' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                         <span
                           style={{

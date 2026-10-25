@@ -1,0 +1,67 @@
+{
+  "code": "en",
+  "negations": ["not", "no", "never", "without", "do not", "does not", "did not", "cannot", "hardly", "barely", "neither", "nor"],
+  "moods": {
+    "lonely": ["lonely", "alone", "isolated", "solitude", "empty", "abandoned"],
+    "sad": ["sad", "grief", "heartbroken", "melancholy", "down", "sorrow", "crying", "blue"],
+    "reflective": ["reflective", "contemplative", "mindful", "thoughtful", "meditative", "pondering"],
+    "nostalgic": ["nostalgic", "nostalgia", "memories", "past", "childhood", "homesick", "reminiscing"],
+    "rainy": ["rainy", "monsoon", "rain", "storm", "wet", "drizzle", "petrichor", "stormy"],
+    "cozy": ["cozy", "comforting", "warm", "tea", "gentle", "quiet", "soothing"],
+    "hopeful": ["hopeful", "optimistic", "uplifting", "healing", "light", "inspiring"],
+    "calm": ["calm", "peaceful", "serene", "tranquil", "relaxing", "still"]
+  },
+  "preferences": {
+    "length": {
+      "short": ["short", "brief", "quick", "few pages", "shorter", "fast", "under 100 pages", "15 minutes", "bite sized", "short read"],
+      "long": ["long", "longer", "epic", "thick", "sweeping", "multi generation", "many pages", "long read"],
+      "medium": ["medium", "moderate", "standard"]
+    },
+    "format": {
+      "paperback": ["paperback", "softcover", "physical", "paper", "print", "physical copy"],
+      "hardcover": ["hardcover", "hardback", "clothbound", "collector", "hard copy"],
+      "ebook": ["ebook", "e-book", "kindle", "digital", "epub", "pdf", "electronic"]
+    },
+    "genre": {
+      "novel": ["novel", "novels", "fiction", "story", "stories", "narrative", "family saga"],
+      "essays": ["essays", "essay", "nonfiction", "letters", "epistolary", "reflections", "memoir", "observations"]
+    }
+  },
+  "books": {
+    "quiet-hours": ["the quiet hours", "quiet hours", "quiet", "sita", "monsoon novel", "ancestral", "first novel"],
+    "monsoon-letters": ["monsoon letters", "letters", "epistolary", "brighton", "bombay", "sisters", "correspondence", "aerogramme"],
+    "small-things": ["a map of small things", "map of small things", "small things", "map", "sixteen essays", "short essays", "tea stalls"],
+    "room-for-rain": ["a room for rain", "room for rain", "room rain", "coastal town", "unexpected guest"]
+  },
+  "intents": {
+    "greeting": ["hi", "hello", "hey", "greetings", "good morning", "good afternoon", "good evening", "howdy", "welcome"],
+    "thanks": ["thank you", "thanks", "thx", "appreciate", "appreciate your advice", "much obliged", "grateful", "thank u"],
+    "goodbye": ["goodbye", "bye", "see you", "farewell", "have a nice day", "good night", "talk later", "later"],
+    "how_are_you": ["how are you", "how are you doing", "how do you feel", "how are you feeling", "how do you do", "how is it going", "how are things", "you doing well"],
+    "who_are_you": ["who are you", "what are you", "are you an ai", "what can you do", "introduce yourself", "tell me about yourself", "your purpose"],
+    "about_ann": ["who is ann", "about ann", "author", "writer", "biography", "where is ann from", "tell me about the author", "ann facts"],
+    "format": ["format", "formats", "what formats", "available formats", "hardcover", "paperback", "e-book", "ebook", "kindle edition"],
+    "genre": ["genre", "fiction novel", "personal essays", "epistolary collection", "family saga"],
+    "length": ["length", "short read", "quick under 100 pages", "15 minutes to read", "sweeping novel", "how many pages"],
+    "price_delivery": ["price", "cost", "how much", "shipping", "delivery", "postage", "deliver", "free shipping", "international delivery", "fedex", "usps", "ups"],
+    "summary_request": ["summary", "synopsis", "what is it about", "what happens", "tell me about the book", "plot", "overview", "storyline"],
+    "compare_books": ["compare", "difference between", "versus", "vs", "which is better", "how do they differ", "contrast"],
+    "excerpt_request": ["excerpt", "chapter one", "first chapter", "sample", "preview", "read a snippet", "snippet", "opening lines"],
+    "add_to_cart": ["add to cart", "add to bag", "buy", "purchase", "put in bag", "order book", "checkout", "add it", "want to buy"],
+    "returns_faq": ["return", "returns", "refund", "refunds", "return policy", "exchange", "money back", "can i return", "return shipping label"],
+    "small_talk": ["weather", "is it raining", "favorite book", "what is your favorite", "tell me a joke", "joke", "compliment", "you are nice", "you are great", "love you", "wonderful assistant"],
+    "complaint": ["complaint", "terrible", "bad service", "damaged", "broken", "delayed", "late order", "upset", "angry", "disappointed", "poor quality", "torn spine"],
+    "off_topic": ["crypto", "cryptocurrency", "bitcoin", "weather in tokyo", "capital of france", "python code", "solve math", "binary tree", "election", "football", "who won", "recipe", "chocolate cake", "write code"],
+    "crisis": ["kill myself", "suicide", "want to die", "end my life", "hurt myself", "self harm", "no reason to live", "cannot go on", "better off dead"],
+    "injection": ["ignore previous instructions", "system prompt", "you are now dan", "jailbreak", "reveal prompt", "developer instructions", "bypass safety", "repeat after me"]
+  },
+  "clarifying_question": "I want to be sure I guide you well. Are you exploring a story, looking for book details, or wondering where to begin?",
+  "chips": {
+    "novel": "A quiet novel",
+    "essays": "Short essays",
+    "recommend": "Recommend a book",
+    "where_to_start": "Where to start",
+    "about_ann": "About Ann",
+    "shipping": "Shipping info"
+  }
+}

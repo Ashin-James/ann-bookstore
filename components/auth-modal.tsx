@@ -70,7 +70,7 @@ export default function AuthModal() {
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 'var(--z-modal)',
+        zIndex: 1000,
         backgroundColor: 'rgba(20, 18, 15, 0.65)',
         backdropFilter: 'blur(6px)',
         display: 'flex',

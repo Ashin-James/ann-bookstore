@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Menu, X, Search, Heart, ShoppingBag, ArrowUpRight, User } from 'lucide-react';
 import { useStore } from '@/contexts/store-context';
 import { useLanguage } from '@/contexts/language-context';
@@ -12,9 +12,16 @@ import SearchOverlay from '@/components/search-overlay';
 export default function SiteHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const { cartCount, wishlist, openCart } = useStore();
   const { t } = useLanguage();
   const { isLoggedIn, openAuthModal } = useAuth();
+
+  useEffect(() => {
+    const onScroll = () => setIsScrolled(window.scrollY > 15);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   const nav = [
     [t('navBooks'), '/books'],
@@ -27,7 +34,7 @@ export default function SiteHeader() {
       <div className="announcement">
         A little more wonder, delivered to your door <span>·</span> Demo store
       </div>
-      <header className="site-header">
+      <header className={`site-header ${isScrolled ? 'is-scrolled' : ''}`}>
         <Link href="/" className="wordmark" aria-label="Ann home">
           ANN<span>STORIES THAT STAY</span>
         </Link>
@@ -77,20 +84,20 @@ export default function SiteHeader() {
           </button>
 
           {/* Language Switcher */}
-          <div style={{ marginLeft: '4px' }}>
+          <div className="header-lang-switcher" style={{ marginLeft: '4px' }}>
             <LanguageSwitcher compact />
           </div>
 
           {/* Account Link */}
           {isLoggedIn ? (
-            <Link className="icon-link" href="/account" aria-label="My Account" style={{ minWidth: '44px', minHeight: '44px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Link className="icon-link header-account-link" href="/account" aria-label="My Account" style={{ minWidth: '44px', minHeight: '44px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
               <User size={20} />
             </Link>
           ) : (
             <button
               type="button"
               onClick={openAuthModal}
-              className="icon-link"
+              className="icon-link header-account-link"
               style={{ border: 0, background: 'transparent', cursor: 'pointer', minWidth: '44px', minHeight: '44px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
               aria-label="Sign in"
             >
@@ -101,7 +108,7 @@ export default function SiteHeader() {
           {/* Wishlist Link */}
           <Link className="icon-link" href="/wishlist" aria-label={`Wishlist, ${wishlist.length} items`} style={{ minWidth: '44px', minHeight: '44px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
             <Heart size={20} />
-            <span className="action-count">{wishlist.length}</span>
+            <span className="wishlist-badge action-badge">{wishlist.length}</span>
           </Link>
 
           {/* Cart Drawer Trigger */}
@@ -132,7 +139,7 @@ export default function SiteHeader() {
       {mobileMenuOpen && (
         <nav className="mobile-nav">
           <div style={{ padding: '8px 0 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '12px', color: 'var(--muted)' }}>Language</span>
+            <span style={{ fontSize: '14px', color: 'var(--muted)' }}>Language</span>
             <LanguageSwitcher />
           </div>
           {nav.map(([label, href]) => (

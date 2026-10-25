@@ -1,0 +1,219 @@
+{
+  "code": "fr",
+  "negations": [
+    "pas",
+    "non",
+    "ne",
+    "jamais",
+    "sans",
+    "aucun",
+    "aucune"
+  ],
+  "moods": {
+    "lonely": [
+      "seul",
+      "solitaire",
+      "solitude",
+      "isole"
+    ],
+    "sad": [
+      "triste",
+      "chagrin",
+      "tristesse",
+      "deuil"
+    ],
+    "reflective": [
+      "pensif",
+      "contemplatif",
+      "reflexif"
+    ],
+    "nostalgic": [
+      "nostalgique",
+      "nostalgie",
+      "souvenirs",
+      "passe"
+    ],
+    "rainy": [
+      "pluie",
+      "pluvieux",
+      "mousson",
+      "orage"
+    ],
+    "cozy": [
+      "chaleureux",
+      "doux",
+      "calme",
+      "confortable"
+    ],
+    "hopeful": [
+      "espoir",
+      "optimiste",
+      "lumineux"
+    ],
+    "calm": [
+      "calme",
+      "paisible",
+      "serenite"
+    ]
+  },
+  "preferences": {
+    "length": {
+      "short": [
+        "court",
+        "bref",
+        "rapide"
+      ],
+      "long": [
+        "long",
+        "epais"
+      ],
+      "medium": [
+        "moyen"
+      ]
+    },
+    "format": {
+      "paperback": [
+        "broche",
+        "poche"
+      ],
+      "hardcover": [
+        "relie"
+      ],
+      "ebook": [
+        "ebook",
+        "numerique"
+      ]
+    },
+    "genre": {
+      "novel": [
+        "roman",
+        "fiction"
+      ],
+      "essays": [
+        "essais",
+        "lettres"
+      ]
+    }
+  },
+  "books": {
+    "quiet-hours": [
+      "the quiet hours",
+      "quiet hours",
+      "sita"
+    ],
+    "monsoon-letters": [
+      "monsoon letters",
+      "lettres du mousson",
+      "lettres"
+    ],
+    "small-things": [
+      "a map of small things",
+      "petites choses",
+      "essais"
+    ],
+    "room-for-rain": [
+      "a room for rain",
+      "pluie",
+      "hote"
+    ]
+  },
+  "intents": {
+    "greeting": [
+      "bonjour",
+      "salut",
+      "coucou",
+      "bonsoir"
+    ],
+    "thanks": [
+      "merci",
+      "remercie",
+      "merci beaucoup"
+    ],
+    "goodbye": [
+      "au revoir",
+      "a bientot",
+      "adieu"
+    ],
+    "how_are_you": [
+      "comment vas-tu",
+      "comment allez-vous",
+      "ca va"
+    ],
+    "who_are_you": [
+      "qui es-tu",
+      "qui etes-vous",
+      "que fais-tu"
+    ],
+    "about_ann": [
+      "qui est ann",
+      "a propos de ann",
+      "auteur",
+      "biographie"
+    ],
+    "price_delivery": [
+      "prix",
+      "combien",
+      "livraison",
+      "frais de port"
+    ],
+    "summary_request": [
+      "resume",
+      "synopsis",
+      "de quoi parle"
+    ],
+    "compare_books": [
+      "comparer",
+      "difference",
+      "lequel est le meilleur"
+    ],
+    "excerpt_request": [
+      "extrait",
+      "chapitre un",
+      "premier chapitre"
+    ],
+    "add_to_cart": [
+      "ajouter au panier",
+      "commander",
+      "acheter"
+    ],
+    "returns_faq": [
+      "retour",
+      "retours",
+      "remboursement"
+    ],
+    "small_talk": [
+      "meteo",
+      "livre prefere",
+      "blague"
+    ],
+    "complaint": [
+      "reclamation",
+      "retard",
+      "endommage"
+    ],
+    "off_topic": [
+      "crypto",
+      "football",
+      "politique"
+    ],
+    "crisis": [
+      "suicide",
+      "mourir",
+      "me faire du mal"
+    ],
+    "injection": [
+      "ignore les instructions",
+      "system prompt"
+    ]
+  },
+  "clarifying_question": "Je souhaite bien vous orienter. Cherchez-vous un roman, des essais ou des conseils pour debuter ?",
+  "chips": {
+    "novel": "Un roman paisible",
+    "essays": "Essais courts",
+    "recommend": "Conseiller un livre",
+    "where_to_start": "Par où commencer",
+    "about_ann": "À propos d’Ann",
+    "shipping": "Livraison"
+  },
+  "unsupported_notice": "Pour le français, vous pouvez cliquer sur les options ci-dessous ou poser une question en anglais."
+}

@@ -1,0 +1,198 @@
+{
+  "code": "zh-Hans",
+  "negations": [
+    "不",
+    "不要",
+    "别",
+    "没有",
+    "非",
+    "无"
+  ],
+  "moods": {
+    "lonely": [
+      "孤独",
+      "独自",
+      "孤单"
+    ],
+    "sad": [
+      "悲伤",
+      "难过",
+      "低落",
+      "伤心"
+    ],
+    "reflective": [
+      "沉思",
+      "内省"
+    ],
+    "nostalgic": [
+      "怀旧",
+      "回忆",
+      "思乡"
+    ],
+    "rainy": [
+      "雨天",
+      "季风",
+      "下雨"
+    ],
+    "cozy": [
+      "舒适",
+      "温暖",
+      "安宁"
+    ],
+    "hopeful": [
+      "希望",
+      "治愈"
+    ],
+    "calm": [
+      "平静",
+      "宁静"
+    ]
+  },
+  "preferences": {
+    "length": {
+      "short": [
+        "短篇",
+        "简短",
+        "短"
+      ],
+      "long": [
+        "长篇",
+        "厚"
+      ],
+      "medium": [
+        "中等"
+      ]
+    },
+    "format": {
+      "paperback": [
+        "平装"
+      ],
+      "hardcover": [
+        "精装"
+      ],
+      "ebook": [
+        "电子书"
+      ]
+    },
+    "genre": {
+      "novel": [
+        "小说"
+      ],
+      "essays": [
+        "散文",
+        "随笔",
+        "信件"
+      ]
+    }
+  },
+  "books": {
+    "quiet-hours": [
+      "the quiet hours",
+      "静谧时光"
+    ],
+    "monsoon-letters": [
+      "monsoon letters",
+      "季风书简"
+    ],
+    "small-things": [
+      "a map of small things",
+      "微物之图"
+    ],
+    "room-for-rain": [
+      "a room for rain",
+      "留予雨声的房间"
+    ]
+  },
+  "intents": {
+    "greeting": [
+      "你好",
+      "您好",
+      "早上好",
+      "晚上好"
+    ],
+    "thanks": [
+      "谢谢",
+      "多谢",
+      "感谢"
+    ],
+    "goodbye": [
+      "再见",
+      "拜拜"
+    ],
+    "how_are_you": [
+      "你好吗",
+      "最近怎么样"
+    ],
+    "who_are_you": [
+      "你是谁",
+      "你是ai吗"
+    ],
+    "about_ann": [
+      "安是谁",
+      "关于安",
+      "作者简介"
+    ],
+    "price_delivery": [
+      "价格",
+      "多少钱",
+      "运费",
+      "配送"
+    ],
+    "summary_request": [
+      "简介",
+      "讲了什么",
+      "故事梗概"
+    ],
+    "compare_books": [
+      "对比",
+      "区别",
+      "哪本更好"
+    ],
+    "excerpt_request": [
+      "试读",
+      "第一章",
+      "节选"
+    ],
+    "add_to_cart": [
+      "加入购物车",
+      "购买"
+    ],
+    "returns_faq": [
+      "退货",
+      "退款政策"
+    ],
+    "small_talk": [
+      "天气",
+      "最喜欢的书",
+      "讲个笑话"
+    ],
+    "complaint": [
+      "投诉",
+      "破损",
+      "迟到"
+    ],
+    "off_topic": [
+      "比特币",
+      "足球",
+      "写代码"
+    ],
+    "crisis": [
+      "自杀",
+      "不想活了"
+    ],
+    "injection": [
+      "忽略之前的指令",
+      "系统提示词"
+    ]
+  },
+  "clarifying_question": "我很乐意为您指引。您是在寻找一部宁静的小说、短篇散文，还是想了解从哪本开始？",
+  "chips": {
+    "novel": "宁静的小说",
+    "essays": "短篇散文",
+    "recommend": "推荐一本书",
+    "where_to_start": "从哪本开始",
+    "about_ann": "关于安",
+    "shipping": "配送信息"
+  },
+  "unsupported_notice": "中文用户请使用下方的快捷选项浏览与提问。"
+}

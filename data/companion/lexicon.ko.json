@@ -1,0 +1,172 @@
+{
+  "code": "ko",
+  "negations": [
+    "아니다",
+    "없다",
+    "말다",
+    "안"
+  ],
+  "moods": {
+    "lonely": [
+      "외로운",
+      "외로움",
+      "혼자"
+    ],
+    "sad": [
+      "슬픈",
+      "우울한"
+    ],
+    "reflective": [
+      "사색적인",
+      "생각"
+    ],
+    "nostalgic": [
+      "그리운",
+      "추억"
+    ],
+    "rainy": [
+      "비",
+      "비오는 날",
+      "장마"
+    ],
+    "cozy": [
+      "아늑한",
+      "따뜻한"
+    ],
+    "hopeful": [
+      "희망",
+      "치유"
+    ],
+    "calm": [
+      "고요한",
+      "평온한"
+    ]
+  },
+  "preferences": {
+    "length": {
+      "short": [
+        "짧은"
+      ],
+      "long": [
+        "긴"
+      ],
+      "medium": [
+        "보통"
+      ]
+    },
+    "format": {
+      "paperback": [
+        "페이퍼백"
+      ],
+      "hardcover": [
+        "하드커버"
+      ],
+      "ebook": [
+        "전자책"
+      ]
+    },
+    "genre": {
+      "novel": [
+        "소설"
+      ],
+      "essays": [
+        "에세이",
+        "편지"
+      ]
+    }
+  },
+  "books": {
+    "quiet-hours": [
+      "the quiet hours"
+    ],
+    "monsoon-letters": [
+      "monsoon letters"
+    ],
+    "small-things": [
+      "a map of small things"
+    ],
+    "room-for-rain": [
+      "a room for rain"
+    ]
+  },
+  "intents": {
+    "greeting": [
+      "안녕하세요",
+      "안녕"
+    ],
+    "thanks": [
+      "감사합니다",
+      "고마워요"
+    ],
+    "goodbye": [
+      "안녕히 계세요",
+      "잘 가요"
+    ],
+    "how_are_you": [
+      "어떻게 지내세요"
+    ],
+    "who_are_you": [
+      "당신은 누구인가요"
+    ],
+    "about_ann": [
+      "앤은 누구인가요",
+      "작가 소개"
+    ],
+    "price_delivery": [
+      "가격",
+      "얼마",
+      "배송비",
+      "배송"
+    ],
+    "summary_request": [
+      "줄거리",
+      "어떤 내용"
+    ],
+    "compare_books": [
+      "비교",
+      "차이점"
+    ],
+    "excerpt_request": [
+      "미리보기",
+      "1장"
+    ],
+    "add_to_cart": [
+      "장바구니 담기",
+      "구매"
+    ],
+    "returns_faq": [
+      "반품",
+      "환불"
+    ],
+    "small_talk": [
+      "날씨",
+      "좋아하는 책",
+      "농담"
+    ],
+    "complaint": [
+      "불만",
+      "파손"
+    ],
+    "off_topic": [
+      "비트코인",
+      "축구"
+    ],
+    "crisis": [
+      "자살",
+      "죽고 싶다"
+    ],
+    "injection": [
+      "이전 지침 무시"
+    ]
+  },
+  "clarifying_question": "평온한 소설, 짧은 에세이, 아니면 어디서 시작할지 추천을 원하시나요?",
+  "chips": {
+    "novel": "평온한 소설",
+    "essays": "짧은 에세이",
+    "recommend": "도서 추천",
+    "where_to_start": "시작하기 좋은 책",
+    "about_ann": "작가 앤에 대하여",
+    "shipping": "배송 안내"
+  },
+  "unsupported_notice": "한국어는 아래 빠른 선택 버튼을 이용해 보세요."
+}

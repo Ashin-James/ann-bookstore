@@ -7,9 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test:unit": "node --test tests/us-localization.test.mjs",
+    "test:unit": "node --test tests/us-localization.test.mjs tests/translations.test.mjs tests/account-service.test.mjs",
     "test:e2e": "playwright test",
-    "test": "node --test tests/us-localization.test.mjs && playwright test"
+    "test": "node --test tests/us-localization.test.mjs tests/translations.test.mjs tests/account-service.test.mjs && playwright test"
   },
   "dependencies": {
     "@huggingface/transformers": "^4.3.1",
@@ -18,7 +18,8 @@
     "motion": "^12.0.0",
     "next": "^15.2.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "zod": "^3.24.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

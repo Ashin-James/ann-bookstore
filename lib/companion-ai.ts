@@ -1,4 +1,13 @@
-import { CompanionResponse, getRuleBasedResponse } from './companion-rules';
+import {
+  processCompanionMessage,
+  createInitialState,
+  getNaturalTypingDelay,
+  isSemanticModeEligible,
+  loadSemanticIndex,
+  type ConversationState,
+  type ProcessResult,
+} from './companion';
+import type { Book } from '@/data/books';
 
 export type AIStatus = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -8,11 +17,22 @@ export interface AIProgress {
   message: string;
 }
 
+export interface CompanionResponse {
+  text: string;
+  suggestedBooks?: Book[];
+  actionLinks?: { label: string; href: string }[];
+  suggestedQueries?: string[];
+  bookToAddToCart?: { bookId: string; formatId: string };
+  isCrisis?: boolean;
+  intent?: string;
+}
+
 class CompanionAIService {
-  private worker: Worker | null = null;
   private isModelReady = false;
   private isLoading = false;
   private progressListeners: ((progress: AIProgress) => void)[] = [];
+  private sessionState: ConversationState = createInitialState();
+  private hasFirstMessageSent = false;
 
   public onProgress(callback: (progress: AIProgress) => void) {
     this.progressListeners.push(callback);
@@ -25,85 +45,92 @@ class CompanionAIService {
     this.progressListeners.forEach((cb) => cb(progress));
   }
 
+  public resetSession() {
+    this.sessionState = createInitialState();
+    this.hasFirstMessageSent = false;
+  }
+
+  public getState(): ConversationState {
+    return this.sessionState;
+  }
+
   /**
-   * Initializes the in-browser Neural Model via Web Worker with WebGPU/WASM.
-   * Only called when the user explicitly enables "Deep AI Mode".
+   * Lazily loads semantic embeddings index after first message if device is eligible
    */
-  public async loadModel(): Promise<boolean> {
-    if (this.isModelReady) return true;
-    if (this.isLoading) return false;
+  public async maybeLazyLoadSemanticMode(): Promise<boolean> {
+    if (this.isModelReady || this.isLoading) return this.isModelReady;
+    if (!isSemanticModeEligible()) return false;
 
     this.isLoading = true;
     this.notifyProgress({
       status: 'loading',
-      progress: 5,
-      message: 'Initializing device WebGPU environment...',
+      progress: 30,
+      message: 'Loading quantized literary embeddings...',
     });
 
     try {
-      // Check if WebGPU is available in browser
-      const hasWebGPU = typeof navigator !== 'undefined' && 'gpu' in navigator;
-      this.notifyProgress({
-        status: 'loading',
-        progress: 20,
-        message: hasWebGPU
-          ? 'WebGPU acceleration detected. Loading model...'
-          : 'Using CPU/WASM fallback. Loading model...',
-      });
-
-      // Lazy import transformers in browser
-      const { env } = await import('@huggingface/transformers');
-      env.allowLocalModels = false;
-
-      this.notifyProgress({
-        status: 'loading',
-        progress: 50,
-        message: 'Downloading literary weights into device cache...',
-      });
-
-      // Use a very compact model for fast client-side inference
-      // Xenova/Qwen1.5-0.5B-Chat or fallback sentiment/feature pipeline
-      setTimeout(() => {
+      const index = await loadSemanticIndex();
+      if (index) {
         this.isModelReady = true;
         this.isLoading = false;
         this.notifyProgress({
           status: 'ready',
           progress: 100,
-          message: 'In-browser AI ready with zero server dependencies.',
+          message: 'Offline semantic mode active.',
         });
-      }, 1200);
-
-      return true;
-    } catch (err) {
-      console.warn('WebGPU/Transformers initialization fallback to rule engine:', err);
+        return true;
+      }
+      throw new Error('Index could not be loaded');
+    } catch {
       this.isLoading = false;
       this.notifyProgress({
         status: 'error',
         progress: 0,
-        message: 'Device neural accelerator unavailable; using instant catalogue assistant.',
+        message: 'Using fast client-side rules engine.',
       });
       return false;
     }
   }
 
   /**
-   * Generates response:
-   * 1. First consults the rule-based catalogue engine for exact Ann's bookstore context.
-   * 2. If Neural mode is enabled, augments the response with in-browser generated thoughts.
+   * Generates response using NLU engine, respecting natural typing delay and language
    */
-  public async generateReply(query: string, useNeural = false): Promise<CompanionResponse> {
-    // Immediate catalogue response
-    const baseResponse = getRuleBasedResponse(query);
-
-    if (!useNeural || !this.isModelReady) {
-      return baseResponse;
+  public async generateReply(
+    query: string,
+    useSemantic = false,
+    langCode = 'en'
+  ): Promise<CompanionResponse> {
+    // If first message, trigger lazy-load in background for subsequent turns if eligible
+    if (!this.hasFirstMessageSent) {
+      this.hasFirstMessageSent = true;
+      if (useSemantic || isSemanticModeEligible()) {
+        this.maybeLazyLoadSemanticMode().catch(() => {});
+      }
     }
 
-    // Neural response enrichment
+    const result: ProcessResult = await processCompanionMessage(
+      query,
+      this.sessionState,
+      langCode,
+      useSemantic && this.isModelReady
+    );
+
+    // Update conversation state in session
+    this.sessionState = result.nextState;
+
     return {
-      ...baseResponse,
-      text: `${baseResponse.text}`,
+      text: result.reply.text,
+      suggestedBooks: result.reply.suggestedBooks,
+      actionLinks: result.reply.actionLinks,
+      suggestedQueries: result.reply.chips?.map((c) => c.query || c.label),
+      bookToAddToCart: result.reply.bookToAddToCart,
+      isCrisis: result.reply.isCrisis,
+      intent: result.reply.intent,
     };
+  }
+
+  public getNaturalDelay(): number {
+    return getNaturalTypingDelay();
   }
 
   public getReadyStatus(): boolean {

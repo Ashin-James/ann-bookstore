@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { X, Plus, Minus, Trash2, ArrowRight, ShoppingBag, RotateCcw } from 'lucide-react';
 import { useStore } from '@/contexts/store-context';
 import { books } from '@/data/books';
-import { money } from '@/src/config/site.config';
 import { SHIPPING_CONFIG } from '@/src/config/shipping.config';
 import { Cover } from '@/components/book-card';
 import { useLanguage } from '@/contexts/language-context';
@@ -22,7 +21,7 @@ export default function CartDrawer() {
     addToCart,
     cartCount,
   } = useStore();
-  const { t } = useLanguage();
+  const { t, formatCurrency } = useLanguage();
   const panelRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
@@ -104,7 +103,7 @@ export default function CartDrawer() {
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 'var(--z-drawer)',
+        zIndex: 1000,
         backgroundColor: 'rgba(20, 18, 15, 0.65)',
         backdropFilter: 'blur(6px)',
         display: 'flex',
@@ -193,7 +192,7 @@ export default function CartDrawer() {
           >
             <span style={{ fontWeight: 500, color: 'var(--wine)' }}>
               {diff > 0
-                ? `Add ${money(diff)} more for free delivery`
+                ? `Add ${formatCurrency(diff)} more for free delivery`
                 : '✓ Complimentary delivery unlocked!'}
             </span>
             <span style={{ color: 'var(--muted)', fontSize: '14px' }}>{progressPercent}%</span>
@@ -302,21 +301,19 @@ export default function CartDrawer() {
                 >
                   <div
                     style={{
-                      width: '45px',
-                      height: '62px',
+                      width: '44px',
+                      height: '60px',
                       flexShrink: 0,
-                      transform: 'scale(0.25)',
-                      transformOrigin: 'top left',
-                      marginRight: '-110px',
-                      marginBottom: '-165px',
-                      pointerEvents: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                     }}
                     aria-hidden="true"
                   >
-                    <Cover book={item.book} />
+                    <Cover book={item.book} size="xs" />
                   </div>
 
-                  <div style={{ flex: 1, minWidth: 0, paddingLeft: '8px' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <Link
                       href={`/books/${item.book.slug}`}
                       onClick={closeCart}
@@ -405,7 +402,7 @@ export default function CartDrawer() {
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--ink)' }}>
-                          {money(item.lineTotal)}
+                          {formatCurrency(item.lineTotal)}
                         </span>
                         <button
                           type="button"
@@ -478,7 +475,7 @@ export default function CartDrawer() {
                           {cb.title}
                         </span>
                         <span style={{ fontSize: '14px', color: 'var(--wine)' }}>
-                          {money(defaultFormat.price)} · {defaultFormat.name}
+                          {formatCurrency(defaultFormat.price)} · {defaultFormat.name}
                         </span>
                       </div>
                       <button
@@ -525,8 +522,8 @@ export default function CartDrawer() {
               }}
             >
               <span style={{ color: 'var(--muted)' }}>{t('subtotal')}</span>
-              <span style={{ fontFamily: 'var(--font-serif)', fontSize: '20px', fontWeight: 600 }}>
-                {money(subtotal)}
+              <span style={{ fontFamily: 'var(--font-sans)', fontSize: '18px', fontWeight: 600, color: 'var(--ink)' }}>
+                {formatCurrency(subtotal)}
               </span>
             </div>
 

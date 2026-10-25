@@ -36,7 +36,7 @@ export const books: Book[] = [
       'A family, one long rainy season, and the small choices that change everything.',
     cover: 'quiet',
     featured: true,
-    note: 'A novel by Ann [SAMPLE PRICE: USD]',
+    note: 'A novel by Ann',
     formats: [
       { id: 'quiet-paperback', name: 'Paperback', price: 1800 },
       { id: 'quiet-hardcover', name: 'Hardcover', price: 2800 },
@@ -52,7 +52,7 @@ export const books: Book[] = [
       'A collection of intimate letters and essays about memory, home, and the words we write when the rain will not stop.',
     shortDescription: 'Essays on memory, home, and the words we leave behind.',
     cover: 'letters',
-    note: 'Epistolary essays [SAMPLE PRICE: USD]',
+    note: 'Epistolary essays',
     formats: [
       { id: 'letters-paperback', name: 'Paperback', price: 1950 },
       { id: 'letters-ebook', name: 'E-book', price: 1199 },
@@ -67,7 +67,7 @@ export const books: Book[] = [
       'Small observations become a map back to ourselves in this thoughtful collection about everyday wonder and the art of paying attention.',
     shortDescription: 'A thoughtful map to the wonder hiding in everyday life.',
     cover: 'map',
-    note: 'Reflective collection [SAMPLE PRICE: USD]',
+    note: 'Reflective collection',
     formats: [{ id: 'map-ebook', name: 'E-book', price: 1200 }],
   },
   {
@@ -79,7 +79,7 @@ export const books: Book[] = [
       'In a coastal town shaped by the weather, one unexpected guest changes the way a family understands its past.',
     shortDescription: 'An intimate story of family, weather, and unexpected beginnings.',
     cover: 'rain',
-    note: 'A novel [SAMPLE PRICE: USD]',
+    note: 'A coastal novel',
     formats: [
       { id: 'rain-paperback', name: 'Paperback', price: 1900 },
       { id: 'rain-hardcover', name: 'Hardcover', price: 2900 },

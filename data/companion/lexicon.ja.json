@@ -1,0 +1,185 @@
+{
+  "code": "ja",
+  "negations": [
+    "ない",
+    "ず",
+    "なし",
+    "いいえ"
+  ],
+  "moods": {
+    "lonely": [
+      "孤独",
+      "寂しい",
+      "ひとり"
+    ],
+    "sad": [
+      "悲しい",
+      "哀しい",
+      "憂鬱"
+    ],
+    "reflective": [
+      "物思い",
+      "思索"
+    ],
+    "nostalgic": [
+      "懐かしい",
+      "郷愁",
+      "思い出"
+    ],
+    "rainy": [
+      "雨",
+      "梅雨",
+      "雨の日"
+    ],
+    "cozy": [
+      "心地よい",
+      "温かい",
+      "落ち着く"
+    ],
+    "hopeful": [
+      "希望",
+      "癒し"
+    ],
+    "calm": [
+      "穏やか",
+      "静けさ"
+    ]
+  },
+  "preferences": {
+    "length": {
+      "short": [
+        "短い",
+        "短編"
+      ],
+      "long": [
+        "長い",
+        "長編"
+      ],
+      "medium": [
+        "普通"
+      ]
+    },
+    "format": {
+      "paperback": [
+        "ペーパーバック",
+        "文庫"
+      ],
+      "hardcover": [
+        "ハードカバー",
+        "単行本"
+      ],
+      "ebook": [
+        "電子書籍",
+        "Kindle"
+      ]
+    },
+    "genre": {
+      "novel": [
+        "小説"
+      ],
+      "essays": [
+        "エッセイ",
+        "随筆",
+        "手紙"
+      ]
+    }
+  },
+  "books": {
+    "quiet-hours": [
+      "the quiet hours",
+      "クワイエット・アワーズ"
+    ],
+    "monsoon-letters": [
+      "monsoon letters",
+      "モンスーンの手紙"
+    ],
+    "small-things": [
+      "a map of small things"
+    ],
+    "room-for-rain": [
+      "a room for rain"
+    ]
+  },
+  "intents": {
+    "greeting": [
+      "こんにちは",
+      "おはよう",
+      "こんばんは"
+    ],
+    "thanks": [
+      "ありがとう",
+      "感謝"
+    ],
+    "goodbye": [
+      "さようなら",
+      "またね"
+    ],
+    "how_are_you": [
+      "お元気ですか",
+      "調子はどうですか"
+    ],
+    "who_are_you": [
+      "あなたは誰ですか"
+    ],
+    "about_ann": [
+      "アンについて",
+      "著者"
+    ],
+    "price_delivery": [
+      "価格",
+      "いくら",
+      "配送料",
+      "配送"
+    ],
+    "summary_request": [
+      "あらすじ",
+      "どんな話"
+    ],
+    "compare_books": [
+      "比較",
+      "違い"
+    ],
+    "excerpt_request": [
+      "試し読み",
+      "第一章"
+    ],
+    "add_to_cart": [
+      "カートに追加",
+      "購入"
+    ],
+    "returns_faq": [
+      "返品",
+      "返金"
+    ],
+    "small_talk": [
+      "天気",
+      "おすすめ",
+      "冗談"
+    ],
+    "complaint": [
+      "苦情",
+      "破損"
+    ],
+    "off_topic": [
+      "暗号資産",
+      "サッカー"
+    ],
+    "crisis": [
+      "自殺",
+      "死にたい"
+    ],
+    "injection": [
+      "指示を無視して"
+    ]
+  },
+  "clarifying_question": "静かな小説、短いエッセイ、あるいはおすすめの作品をお探しですか？",
+  "chips": {
+    "novel": "静かな小説",
+    "essays": "短いエッセイ",
+    "recommend": "本をおすすめ",
+    "where_to_start": "最初の一冊",
+    "about_ann": "アンについて",
+    "shipping": "配送について"
+  },
+  "unsupported_notice": "日本語では下の選択肢からお進みいただけます。"
+}

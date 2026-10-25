@@ -1,0 +1,67 @@
+{
+  "code": "es",
+  "negations": ["no", "nunca", "jamas", "sin", "tampoco", "nada", "nadie", "ningun", "ninguno", "ninguna"],
+  "moods": {
+    "lonely": ["solo", "sola", "soledad", "aislado", "vacio"],
+    "sad": ["triste", "tristeza", "duelo", "desanimo", "melancolia", "llorando", "melancolico"],
+    "reflective": ["reflexivo", "contemplativo", "pensativo", "meditativo"],
+    "nostalgic": ["nostalgico", "nostalgia", "recuerdos", "pasado", "infancia", "anoranzo"],
+    "rainy": ["lluvia", "lluvioso", "monzon", "tormenta", "tiempo lluvioso", "dia de lluvia"],
+    "cozy": ["acogedor", "calido", "confortable", "tranquilo", "suave"],
+    "hopeful": ["esperanzador", "optimista", "sanador", "luz", "esperanza"],
+    "calm": ["calma", "paz", "sereno", "relajante", "tranquilidad"]
+  },
+  "preferences": {
+    "length": {
+      "short": ["corto", "breve", "rapido", "pocas paginas", "mas corto", "15 minutos", "lectura corta"],
+      "long": ["largo", "mas largo", "extenso", "muchas paginas"],
+      "medium": ["mediano", "estandar"]
+    },
+    "format": {
+      "paperback": ["tapa blanda", "bolsillo", "fisico", "papel", "impreso"],
+      "hardcover": ["tapa dura", "cartone", "coleccionista"],
+      "ebook": ["ebook", "libro electronico", "digital", "kindle", "epub"]
+    },
+    "genre": {
+      "novel": ["novela", "ficcion", "historia", "relato", "saga familiar"],
+      "essays": ["ensayos", "ensayo", "no ficcion", "cartas", "epistolar", "reflexiones"]
+    }
+  },
+  "books": {
+    "quiet-hours": ["the quiet hours", "quiet hours", "horas de silencio", "sita", "primera novela"],
+    "monsoon-letters": ["monsoon letters", "cartas del monzon", "cartas", "hermanas", "brighton", "bombay"],
+    "small-things": ["a map of small things", "mapa de pequenas cosas", "pequenas cosas", "ensayos cortos"],
+    "room-for-rain": ["a room for rain", "espacio para la lluvia", "costa", "huesped inesperado"]
+  },
+  "intents": {
+    "greeting": ["hola", "buenos dias", "buenas tardes", "buenas noches", "saludos", "que tal"],
+    "thanks": ["gracias", "muchas gracias", "agradecido", "agradecida", "muchas gracias por tu ayuda"],
+    "goodbye": ["adios", "hasta luego", "nos vemos", "chao", "hasta pronto", "que tengas buen dia"],
+    "how_are_you": ["como estas", "que tal estas", "como te va", "como andas", "como estas hoy"],
+    "who_are_you": ["quien eres", "que eres", "eres una ia", "que puedes hacer", "presentate", "quien eres y que puedes hacer"],
+    "about_ann": ["quien es ann", "sobre ann", "autora", "escritora", "biografia", "de donde es ann", "quien es la escritora ann"],
+    "format": ["formatos", "edicion en tapa blanda o libro electronico", "tapa blanda", "tapa dura", "libro electronico"],
+    "genre": ["prefiero leer ensayos y cartas", "ensayos y cartas", "novela de ficcion"],
+    "length": ["busco una lectura corta", "lectura corta", "libro corto", "cuantas paginas"],
+    "price_delivery": ["precio", "costo", "cuanto cuesta", "envio", "entrega", "gastos de envio", "envio gratis", "cuanto cuesta el envio"],
+    "summary_request": ["resumen", "sinopsis", "de que trata", "que pasa", "trama", "argumento", "de que trata el libro"],
+    "compare_books": ["comparar", "diferencia entre", "cual es mejor", "frente a", "contrastar"],
+    "excerpt_request": ["extracto", "capitulo uno", "primer capitulo", "muestra", "fragmento", "leer fragmento", "puedo leer el primer capitulo"],
+    "add_to_cart": ["anadir a la cesta", "anadir al carrito", "comprar", "agregar", "poner en la cesta", "lo anado", "anadir the quiet hours al carrito"],
+    "returns_faq": ["devolucion", "devoluciones", "politica de devolucion", "reembolso", "devolver libro", "politica de devolucion y reembolso"],
+    "small_talk": ["clima", "tiempo", "esta lloviendo", "libro favorito", "chiste", "cuentame un chiste", "cumplido", "eres genial", "cuentame un chiste agradable"],
+    "complaint": ["queja", "terrible", "mal servicio", "danado", "roto", "retrasado", "decepcionado", "tengo una queja sobre el envio demorado", "envio demorado"],
+    "off_topic": ["cripto", "bitcoin", "capital de francia", "codigo python", "partido de futbol", "quien gano", "cual es el precio actual de bitcoin"],
+    "crisis": ["quiero morir", "suicidio", "quitarme la vida", "hacerme dano", "no vale la pena vivir", "no puedo mas"],
+    "injection": ["ignora las instrucciones anteriores", "prompt del sistema", "ahora eres dan", "modo desarrollador", "ignora las instrucciones"]
+  },
+  "clarifying_question": "Deseo guiarle bien. ¿Busca una historia tranquila, detalles de un libro o saber por dónde comenzar?",
+  "chips": {
+    "novel": "Una novela pausada",
+    "essays": "Ensayos breves",
+    "recommend": "Recomendar un libro",
+    "where_to_start": "Por dónde empezar",
+    "about_ann": "Sobre Ann",
+    "shipping": "Información de envío"
+  }
+}

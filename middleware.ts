@@ -1,0 +1,36 @@
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+
+export function middleware(request: NextRequest) {
+  const { pathname, search } = request.nextUrl;
+  const sessionCookie = request.cookies.get('ann_session')?.value;
+
+  // Protect /account and all /account/* routes
+  if (pathname === '/account' || pathname.startsWith('/account/')) {
+    if (!sessionCookie) {
+      const fullPath = pathname + search;
+      // Ensure same-site path only (starts with / and not //)
+      const safeNext =
+        fullPath.startsWith('/') && !fullPath.startsWith('//') ? fullPath : '/account';
+      const loginUrl = new URL('/login', request.url);
+      loginUrl.searchParams.set('next', safeNext);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
+  // If already logged in and visiting /login, redirect to next or /account
+  if (pathname === '/login' && sessionCookie) {
+    const nextParam = request.nextUrl.searchParams.get('next');
+    const safeNext =
+      nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//')
+        ? nextParam
+        : '/account';
+    return NextResponse.redirect(new URL(safeNext, request.url));
+  }
+
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: ['/account', '/account/:path*', '/login'],
+};

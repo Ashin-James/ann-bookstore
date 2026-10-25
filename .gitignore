@@ -10,3 +10,5 @@ npm-debug.log*
 docs/screenshots/
 test-results/
 playwright-report/
+.vercel/
+*.ipynb
