@@ -10,7 +10,14 @@ test.describe('Account Hub & Subpages E2E Suite', () => {
     test.describe(`Viewport: ${vp.name}`, () => {
       test.use({ viewport: { width: vp.width, height: vp.height } });
 
-      test.beforeEach(async ({ page }) => {
+      test.beforeEach(async ({ page, context }, testInfo) => {
+        const isSignedOutTest =
+          testInfo.title.includes('Signed-out') || testInfo.title.includes('Sign in flow');
+        if (!isSignedOutTest) {
+          await context.addCookies([
+            { name: 'ann_session', value: 'usr_demo_01', url: 'http://localhost:3001' },
+          ]);
+        }
         await page.addInitScript(() => {
           try {
             window.localStorage.setItem('ann-cookie-consent', 'accepted');

@@ -5,6 +5,14 @@ export function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   const sessionCookie = request.cookies.get('ann_session')?.value;
 
+  // Feature flag ADMIN_ENABLED: when false or unset the site behaves exactly as before and /admin returns 404
+  if (pathname === '/admin' || pathname.startsWith('/admin/') || pathname.startsWith('/api/admin/')) {
+    const adminEnabled = process.env.ADMIN_ENABLED === 'true';
+    if (!adminEnabled) {
+      return NextResponse.rewrite(new URL('/not-found', request.url), { status: 404 });
+    }
+  }
+
   // Protect /account and all /account/* routes
   if (pathname === '/account' || pathname.startsWith('/account/')) {
     if (!sessionCookie) {
@@ -32,5 +40,12 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/account', '/account/:path*', '/login'],
+  matcher: [
+    '/account',
+    '/account/:path*',
+    '/login',
+    '/admin',
+    '/admin/:path*',
+    '/api/admin/:path*',
+  ],
 };

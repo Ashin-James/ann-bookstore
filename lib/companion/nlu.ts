@@ -141,9 +141,14 @@ export function damerauLevenshtein(a: string, b: string): number {
   return d[a.length][b.length];
 }
 
+const NON_TYPO_WORDS = new Set([
+  'book', 'books', 'ebook', 'ebooks', 'read', 'reading', 'reads', 'story', 'stories', 'tell', 'want', 'where', 'start'
+]);
+
 export function isTypoMatch(word: string, target: string): boolean {
   if (word === target) return true;
   if ((word === 'book' || word === 'books') && (target === 'ebook' || target === 'ebooks')) return false;
+  if (NON_TYPO_WORDS.has(word)) return false;
   const dist = damerauLevenshtein(word, target);
   if (target.length >= 5 && dist <= 1) return true;
   if (target.length >= 8 && dist <= 2) return true;

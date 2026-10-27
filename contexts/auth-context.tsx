@@ -104,10 +104,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(DEMO_USER);
         localStorage.setItem('ann-bookstore-user', JSON.stringify(DEMO_USER));
       } else {
-        // If neither exists and not signed out, default demo user is signed in for seamless exploration
-        setUser(DEMO_USER);
-        localStorage.setItem('ann-bookstore-user', JSON.stringify(DEMO_USER));
-        setSessionCookie(DEMO_USER.id);
+      const isLoginPage = typeof window !== 'undefined' && window.location.pathname === '/login';
+      if (isLoginPage && !sessionCookie) {
+        setUser(null);
+        clearSessionCookie();
+        return;
+      }
+
+      // If neither exists and not signed out, default demo user is signed in for seamless exploration
+      setUser(DEMO_USER);
+      localStorage.setItem('ann-bookstore-user', JSON.stringify(DEMO_USER));
+      setSessionCookie(DEMO_USER.id);
       }
     } catch {
       setUser(DEMO_USER);

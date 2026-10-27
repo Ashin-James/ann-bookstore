@@ -1,0 +1,23 @@
+name: Daily Free Stack Keepalive
+
+on:
+  schedule:
+    # Trigger daily at 06:00 UTC to prevent Supabase free tier inactivity pausing
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Store Health Endpoint
+        run: |
+          TARGET_URL="${{ secrets.SITE_URL || 'https://ann-bookstore.vercel.app' }}/api/health"
+          echo "Pinging keepalive endpoint at $TARGET_URL..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$TARGET_URL" || true)
+          echo "HTTP response status: $STATUS"
+          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
+            echo "Health ping succeeded."
+          else
+            echo "Warning: Received HTTP $STATUS, keeping workflow green."
+          fi

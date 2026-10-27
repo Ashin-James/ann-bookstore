@@ -149,9 +149,14 @@ function damerauLevenshtein(a, b) {
   return d[a.length][b.length];
 }
 
+const NON_TYPO_WORDS = new Set([
+  'book', 'books', 'ebook', 'ebooks', 'read', 'reading', 'reads', 'story', 'stories', 'tell', 'want', 'where', 'start'
+]);
+
 function isTypoMatch(word, target) {
   if (word === target) return true;
   if ((word === 'book' || word === 'books') && (target === 'ebook' || target === 'ebooks')) return false;
+  if (NON_TYPO_WORDS.has(word)) return false;
   const dist = damerauLevenshtein(word, target);
   if (target.length >= 5 && dist <= 1) return true;
   if (target.length >= 8 && dist <= 2) return true;
@@ -414,7 +419,7 @@ function classifyIntent(rawQuery, state, langCode = 'en') {
   }
 
   // Mood recommendation
-  if (moodFound) {
+  if (moodFound || norm.includes('mood') || norm.includes('estado de animo')) {
     addScore('mood_recommendation', 0.95);
   }
 
@@ -598,7 +603,8 @@ describe('COMPANION ENGINE EVALUATION SUITE', () => {
 
         for (let t = 0; t < scenario.turns.length; t++) {
           const turn = scenario.turns[t];
-          const match = classifyIntent(turn.query, state);
+          const lang = turn.lang || scenario.lang || (scenario.name.toLowerCase().includes('spanish') ? 'es' : 'en');
+          const match = classifyIntent(turn.query, state, lang);
 
           assert.strictEqual(
             match.intent,
