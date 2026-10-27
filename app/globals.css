@@ -401,7 +401,7 @@ small {
 
 .eyebrow {
   font-family: var(--font-sans), monospace;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -427,7 +427,7 @@ small {
   padding: 6px 14px;
   border-radius: 9999px;
   font-family: var(--font-sans), monospace;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -676,7 +676,7 @@ button[aria-busy="true"] {
   display: flex;
   justify-content: space-between;
   font-family: var(--font-sans), monospace;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -700,7 +700,7 @@ button[aria-busy="true"] {
   align-items: center;
   gap: 10px;
   font-family: var(--font-sans), monospace;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -788,7 +788,7 @@ button[aria-busy="true"] {
 
 .cover-title-thumb {
   font-family: var(--font-serif);
-  font-size: 8px;
+  font-size: 14px;
   line-height: 1.1;
   font-weight: 600;
   color: #FFFDF9;
@@ -875,7 +875,7 @@ button[aria-busy="true"] {
 
 .cover-title-sm {
   font-family: var(--font-serif);
-  font-size: 11px;
+  font-size: 14px;
   line-height: 1.15;
   font-weight: 600;
   color: #FFFDF9;
@@ -897,7 +897,7 @@ button[aria-busy="true"] {
 
 .cover-subtitle-sm {
   font-family: var(--font-serif);
-  font-size: 8px;
+  font-size: 14px;
   font-style: italic;
   color: #EAE2D5;
   line-height: 1.2;
@@ -1003,7 +1003,7 @@ button[aria-busy="true"] {
 
 .cover-author {
   font-family: var(--font-sans), monospace;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.26em;
   margin: 2px 0 18px;
@@ -1033,7 +1033,7 @@ button[aria-busy="true"] {
 
 .cover-subtitle {
   font-family: var(--font-serif);
-  font-size: 13px;
+  font-size: 14px;
   font-style: italic;
   color: #EAE2D5;
   line-height: 1.35;
@@ -1043,7 +1043,7 @@ button[aria-busy="true"] {
 .cover-bottom {
   margin-top: auto;
   font-family: var(--font-sans), monospace;
-  font-size: 9px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.2em;
   color: var(--gold-foil-light);
@@ -1058,7 +1058,7 @@ button[aria-busy="true"] {
   gap: 10px;
   margin-top: 16px;
   font-family: var(--font-sans), monospace;
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -1099,7 +1099,7 @@ button[aria-busy="true"] {
   position: relative;
   color: var(--ink);
   font-family: var(--font-serif);
-  font-size: 13px;
+  font-size: 14px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
@@ -1146,7 +1146,7 @@ button[aria-busy="true"] {
 }
 .marquee-num {
   font-family: var(--font-sans), monospace;
-  font-size: 11px;
+  font-size: 14px;
   color: var(--muted);
   letter-spacing: 0.12em;
 }
@@ -1194,7 +1194,7 @@ button[aria-busy="true"] {
 .shelf-filter-btn {
   padding: 8px 18px;
   border-radius: 9999px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--muted);
   transition: all 0.25s ease;
@@ -1286,7 +1286,7 @@ button[aria-busy="true"] {
   border-radius: 4px;
   padding: 12px 14px;
   font-family: var(--font-serif);
-  font-size: 13px;
+  font-size: 14px;
   font-style: italic;
   color: var(--ink);
   line-height: 1.45;
@@ -1337,7 +1337,7 @@ button[aria-busy="true"] {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.04em;
   border-radius: 4px;
@@ -1386,7 +1386,7 @@ button[aria-busy="true"] {
 .book-price span {
   font-weight: 500;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 14px;
   letter-spacing: 0.02em;
 }
 
@@ -1477,7 +1477,7 @@ button[aria-busy="true"] {
   display: flex;
   justify-content: space-between;
   font-family: var(--font-sans), monospace;
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.16em;
   color: var(--dark-atelier-muted);
@@ -1588,7 +1588,7 @@ button[aria-busy="true"] {
 
 .quote-caption {
   font-family: var(--font-sans), monospace;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.2em;
   color: var(--muted);
@@ -1630,7 +1630,7 @@ button[aria-busy="true"] {
   top: 24px;
   right: 28px;
   font-family: var(--font-sans), monospace;
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.16em;
   color: rgba(114, 38, 56, 0.35);
@@ -1651,7 +1651,7 @@ button[aria-busy="true"] {
   padding: 6px 14px;
   border-radius: 9999px;
   font-family: var(--font-sans), monospace;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.16em;
   margin-bottom: 16px;
@@ -1678,7 +1678,7 @@ button[aria-busy="true"] {
   gap: 20px;
   margin-top: 24px;
   font-family: var(--font-sans), monospace;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.1em;
   color: var(--muted);
@@ -1719,6 +1719,7 @@ button[aria-busy="true"] {
 }
 
 .newsletter-input-group input {
+  min-height: 44px;
   background: transparent;
   border: 0;
   outline: 0;
@@ -2861,7 +2862,7 @@ button[aria-busy="true"] {
   margin-bottom: 16px;
 }
 .lang-group-title {
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -2911,7 +2912,7 @@ button[aria-busy="true"] {
   line-height: 1.3;
 }
 .lang-english {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--muted);
   line-height: 1.3;
 }
@@ -2922,7 +2923,7 @@ button[aria-busy="true"] {
   flex-shrink: 0;
 }
 .lang-code-pill {
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
   padding: 3px 7px;
   border-radius: 4px;
@@ -2978,11 +2979,14 @@ button[aria-busy="true"] {
   color: var(--white);
   border: 0;
   border-radius: 6px;
-  padding: 6px 14px;
-  font-size: 13px;
+  padding: 8px 16px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  min-height: 36px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: opacity 0.15s ease;
 }
 .suggestion-btn-switch:hover {
@@ -2993,12 +2997,12 @@ button[aria-busy="true"] {
   background: transparent;
   color: var(--muted);
   cursor: pointer;
-  padding: 6px;
+  padding: 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 36px;
-  min-width: 36px;
+  min-height: 44px;
+  min-width: 44px;
   border-radius: 4px;
   transition: color 0.15s ease;
 }
@@ -3123,7 +3127,7 @@ button[aria-busy="true"] {
   align-items: center;
   justify-content: space-between;
   font-family: var(--font-sans), monospace;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -3432,7 +3436,7 @@ button[aria-busy="true"] {
   padding: 0 20px;
 }
 .about-stamp .stamp-sub {
-  font-size: 13px;
+  font-size: 14px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: #eed6db;

@@ -190,7 +190,7 @@ export default function Home() {
                 </button>
               </div>
 
-              <span className="eyebrow" style={{ fontSize: '11px' }}>
+              <span className="eyebrow" style={{ fontSize: '14px' }}>
                 ARCHIVAL LINEN & DECKLE EDITIONS
               </span>
             </div>

@@ -5,10 +5,25 @@ export function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   const sessionCookie = request.cookies.get('ann_session')?.value;
 
-  // Feature flag ADMIN_ENABLED: when false or unset the site behaves exactly as before and /admin returns 404
+  // Admin Route Protection & Security Guards
   if (pathname === '/admin' || pathname.startsWith('/admin/') || pathname.startsWith('/api/admin/')) {
     const adminEnabled = process.env.ADMIN_ENABLED === 'true';
     if (!adminEnabled) {
+      return NextResponse.rewrite(new URL('/not-found', request.url), { status: 404 });
+    }
+
+    // Public onboarding & auth endpoints within admin
+    const isPublicAdminRoute =
+      pathname === '/admin/login' ||
+      pathname === '/admin/setup' ||
+      pathname.startsWith('/admin/invite') ||
+      pathname === '/api/admin/auth' ||
+      pathname.startsWith('/api/admin/auth/');
+
+    const adminSessionCookie = request.cookies.get('ann_admin_session')?.value;
+
+    if (!isPublicAdminRoute && !adminSessionCookie) {
+      // Return real 404 to non-admins and signed-out visitors (no discovery)
       return NextResponse.rewrite(new URL('/not-found', request.url), { status: 404 });
     }
   }
