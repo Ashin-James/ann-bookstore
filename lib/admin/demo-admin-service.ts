@@ -174,7 +174,16 @@ export class DemoAdminService implements AdminService {
     const isDemoOwner = params.email.toLowerCase() === 'demo@annsbookstore.com' && params.password === 'DemoAdmin2026!';
 
     if (!user && !isDemoOwner) {
-      recordFailedAttempt(params.email);
+      const lockRes = recordFailedAttempt(params.email);
+      if (lockRes.locked) {
+        return {
+          success: false,
+          error: {
+            code: 'LOCKED_OUT',
+            message: 'Account locked after 5 failed attempts. Please retry in 15 minutes.',
+          },
+        };
+      }
       return {
         success: false,
         error: { code: 'UNAUTHORIZED', message: 'Invalid email or password.' },

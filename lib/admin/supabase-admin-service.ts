@@ -136,37 +136,248 @@ export class SupabaseAdminService implements AdminService {
 
   async listBooks(): Promise<Result<BookRecord[]>> {
     if (!this.client) return this.fallback.listBooks();
-    return this.fallback.listBooks();
+    try {
+      const { data: booksData, error } = await this.client
+        .from('books')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error || !booksData) return this.fallback.listBooks();
+
+      const { data: variantsData } = await this.client.from('variants').select('*');
+      const allVariants = (variantsData || []) as Array<{
+        id: string;
+        book_id: string;
+        format: string;
+        price: number;
+        compare_at_price?: number;
+        cost: number;
+        is_demo_cost?: boolean;
+        sku: string;
+        stock: number;
+        low_stock_threshold?: number;
+        weight_grams?: number;
+        signed_edition?: boolean;
+        personalization?: boolean;
+        preorder_date?: string | null;
+      }>;
+
+      const records: BookRecord[] = booksData.map((b) => ({
+        id: b.id,
+        slug: b.slug,
+        title: b.title,
+        subtitle: b.subtitle || '',
+        author: b.author || 'Ann',
+        category: b.category || 'Novel',
+        status: b.status || 'published',
+        shortDescription: b.short_description || '',
+        description: b.description || '',
+        cover: b.cover || 'quiet',
+        coverAlt: b.cover_alt || '',
+        tags: b.tags || ['Fiction'],
+        moods: b.moods || ['Atmospheric'],
+        variants: allVariants
+          .filter((v) => v.book_id === b.id)
+          .map((v) => ({
+            id: v.id,
+            bookId: b.id,
+            format: v.format,
+            price: v.price,
+            compareAtPrice: v.compare_at_price,
+            cost: v.cost,
+            isDemoCost: v.is_demo_cost ?? false,
+            sku: v.sku,
+            stock: v.stock,
+            lowStockThreshold: v.low_stock_threshold ?? 5,
+            weightGrams: v.weight_grams ?? 450,
+            signedEdition: v.signed_edition ?? false,
+            personalization: v.personalization ?? false,
+            preorderDate: v.preorder_date,
+          })),
+      }));
+
+      return { success: true, data: records };
+    } catch {
+      return this.fallback.listBooks();
+    }
   }
 
   async getBook(idOrSlug: string): Promise<Result<BookRecord>> {
     if (!this.client) return this.fallback.getBook(idOrSlug);
-    return this.fallback.getBook(idOrSlug);
+    try {
+      const { data: b, error } = await this.client
+        .from('books')
+        .select('*')
+        .or(`id.eq.${idOrSlug},slug.eq.${idOrSlug}`)
+        .single();
+
+      if (error || !b) return this.fallback.getBook(idOrSlug);
+
+      const { data: variantsData } = await this.client
+        .from('variants')
+        .select('*')
+        .eq('book_id', b.id);
+
+      const rawVariants = (variantsData || []) as Array<{
+        id: string;
+        book_id: string;
+        format: string;
+        price: number;
+        compare_at_price?: number;
+        cost: number;
+        is_demo_cost?: boolean;
+        sku: string;
+        stock: number;
+        low_stock_threshold?: number;
+        weight_grams?: number;
+        signed_edition?: boolean;
+        personalization?: boolean;
+        preorder_date?: string | null;
+      }>;
+
+      const record: BookRecord = {
+        id: b.id,
+        slug: b.slug,
+        title: b.title,
+        subtitle: b.subtitle || '',
+        author: b.author || 'Ann',
+        category: b.category || 'Novel',
+        status: b.status || 'published',
+        shortDescription: b.short_description || '',
+        description: b.description || '',
+        cover: b.cover || 'quiet',
+        coverAlt: b.cover_alt || '',
+        tags: b.tags || ['Fiction'],
+        moods: b.moods || ['Atmospheric'],
+        variants: rawVariants.map((v) => ({
+          id: v.id,
+          bookId: b.id,
+          format: v.format,
+          price: v.price,
+          compareAtPrice: v.compare_at_price,
+          cost: v.cost,
+          isDemoCost: v.is_demo_cost ?? false,
+          sku: v.sku,
+          stock: v.stock,
+          lowStockThreshold: v.low_stock_threshold ?? 5,
+          weightGrams: v.weight_grams ?? 450,
+          signedEdition: v.signed_edition ?? false,
+          personalization: v.personalization ?? false,
+          preorderDate: v.preorder_date,
+        })),
+      };
+
+      return { success: true, data: record };
+    } catch {
+      return this.fallback.getBook(idOrSlug);
+    }
   }
 
   async createBook(params: Parameters<AdminService['createBook']>[0]): Promise<Result<BookRecord>> {
     if (!this.client) return this.fallback.createBook(params);
-    return this.fallback.createBook(params);
+    try {
+      const id = `book_${Date.now()}`;
+      const newBook: BookRecord = {
+        ...params.book,
+        id,
+        variants: params.book.variants.map((v) => ({
+          ...v,
+          id: v.id || `var_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          bookId: id,
+        })),
+      };
+
+      const { error: insertBookErr } = await this.client.from('books').insert({
+        id: newBook.id,
+        slug: newBook.slug,
+        title: newBook.title,
+        subtitle: newBook.subtitle,
+        author: newBook.author,
+        category: newBook.category,
+        status: newBook.status,
+        short_description: newBook.shortDescription,
+        description: newBook.description,
+        cover: newBook.cover,
+        cover_alt: newBook.coverAlt,
+        tags: newBook.tags,
+        moods: newBook.moods,
+      });
+
+      if (insertBookErr) return this.fallback.createBook(params);
+
+      for (const v of newBook.variants) {
+        await this.client.from('variants').insert({
+          id: v.id,
+          book_id: id,
+          format: v.format,
+          price: v.price,
+          cost: v.cost,
+          is_demo_cost: v.isDemoCost ?? false,
+          sku: v.sku,
+          stock: v.stock,
+          low_stock_threshold: v.lowStockThreshold,
+          weight_grams: v.weightGrams,
+          signed_edition: v.signedEdition,
+          personalization: v.personalization,
+          preorder_date: v.preorderDate,
+        });
+      }
+
+      return { success: true, data: newBook };
+    } catch {
+      return this.fallback.createBook(params);
+    }
   }
 
   async updateBook(params: Parameters<AdminService['updateBook']>[0]): Promise<Result<BookRecord>> {
     if (!this.client) return this.fallback.updateBook(params);
-    return this.fallback.updateBook(params);
+    try {
+      const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+      if (params.book.title !== undefined) updates.title = params.book.title;
+      if (params.book.subtitle !== undefined) updates.subtitle = params.book.subtitle;
+      if (params.book.slug !== undefined) updates.slug = params.book.slug;
+      if (params.book.status !== undefined) updates.status = params.book.status;
+      if (params.book.shortDescription !== undefined) updates.short_description = params.book.shortDescription;
+      if (params.book.description !== undefined) updates.description = params.book.description;
+      if (params.book.cover !== undefined) updates.cover = params.book.cover;
+      if (params.book.coverAlt !== undefined) updates.cover_alt = params.book.coverAlt;
+
+      await this.client.from('books').update(updates).eq('id', params.id);
+      return this.getBook(params.id);
+    } catch {
+      return this.fallback.updateBook(params);
+    }
   }
 
   async archiveBook(params: Parameters<AdminService['archiveBook']>[0]): Promise<Result<BookRecord>> {
-    if (!this.client) return this.fallback.archiveBook(params);
-    return this.fallback.archiveBook(params);
+    return this.updateBook({
+      id: params.id,
+      book: { status: 'archived' },
+      actorEmail: params.actorEmail,
+      ipHash: params.ipHash,
+    });
   }
 
   async deleteBook(params: Parameters<AdminService['deleteBook']>[0]): Promise<Result<BookRecord>> {
     if (!this.client) return this.fallback.deleteBook(params);
-    return this.fallback.deleteBook(params);
+    try {
+      const existing = await this.getBook(params.id);
+      if (!existing.success) return this.fallback.deleteBook(params);
+      await this.client.from('variants').delete().eq('book_id', params.id);
+      await this.client.from('books').delete().eq('id', params.id);
+      return existing;
+    } catch {
+      return this.fallback.deleteBook(params);
+    }
   }
 
   async restoreBook(params: Parameters<AdminService['restoreBook']>[0]): Promise<Result<BookRecord>> {
     if (!this.client) return this.fallback.restoreBook(params);
-    return this.fallback.restoreBook(params);
+    return this.createBook({
+      book: params.book,
+      actorEmail: params.actorEmail,
+      ipHash: params.ipHash,
+    });
   }
 
   async updateVariantCost(params: Parameters<AdminService['updateVariantCost']>[0]): Promise<Result<VariantRecord>> {

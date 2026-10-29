@@ -7,9 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test:unit": "node --test tests/us-localization.test.mjs tests/translations.test.mjs tests/account-service.test.mjs",
+    "test:unit": "node --test tests/us-localization.test.mjs tests/translations.test.mjs tests/account-service.test.mjs tests/admin-security.test.mjs",
     "test:e2e": "playwright test",
-    "test": "node --test tests/us-localization.test.mjs tests/translations.test.mjs tests/account-service.test.mjs && playwright test"
+    "test": "node --test tests/us-localization.test.mjs tests/translations.test.mjs tests/account-service.test.mjs tests/admin-security.test.mjs && playwright test"
   },
   "dependencies": {
     "@huggingface/transformers": "^4.3.1",

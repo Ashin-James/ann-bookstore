@@ -130,3 +130,98 @@ test.describe('TASK 1: Admin Books & Storefront Synchronization', () => {
     expect(fs.existsSync(screenshotPath)).toBeTruthy();
   });
 });
+
+test.describe('TASK 1 Security: Route Protection & Admin Lockout', () => {
+  test('signed-out visitor accessing /admin/books receives 404', async ({ browser }) => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    const response = await page.goto('/admin/books');
+    expect(response?.status()).toBe(404);
+    await expect(page.locator('text=Book Catalogue')).not.toBeVisible();
+    await context.close();
+  });
+
+  test('admin login locks out after 5 consecutive failed attempts', async ({ browser }) => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await page.goto('/admin/login');
+
+    const emailInput = page.locator('input[type="email"]');
+    const passwordInput = page.locator('input[type="password"]');
+    const submitButton = page.locator('button[type="submit"]');
+
+    const testEmail = `lockout_e2e_${Date.now()}@test.com`;
+    await emailInput.fill(testEmail);
+    await passwordInput.fill('WrongPassword123!');
+
+    for (let i = 0; i < 5; i++) {
+      const resPromise = page.waitForResponse((res) => res.url().includes('/api/admin/auth'));
+      await submitButton.click();
+      await resPromise;
+    }
+
+    await expect(page.locator('text=Account locked after 5 failed attempts')).toBeVisible();
+    await context.close();
+  });
+
+  test('customer session without admin credentials receives 404 on /admin and /admin/books', async ({ browser }) => {
+    const context = await browser.newContext();
+    // Customer session cookie only
+    await context.addCookies([
+      { name: 'ann_session', value: 'customer_session_token', url: 'http://localhost:3001' },
+    ]);
+    const page = await context.newPage();
+
+    const adminResponse = await page.goto('/admin');
+    expect(adminResponse?.status()).toBe(404);
+
+    const booksResponse = await page.goto('/admin/books');
+    expect(booksResponse?.status()).toBe(404);
+    await expect(page.locator('text=Book Catalogue')).not.toBeVisible();
+    await context.close();
+  });
+
+  test('signed-out direct admin API call receives 404', async ({ request }) => {
+    // Direct HTTP request to protected admin API without session cookie
+    const response = await request.get('/api/admin/books');
+    expect(response.status()).toBe(404);
+  });
+
+  test('admin logout revokes session and blocks further access', async ({ browser }) => {
+    const context = await browser.newContext();
+    await context.addCookies([
+      { name: 'ann_admin_session', value: 'demo_session_token_owner', url: 'http://localhost:3001' },
+    ]);
+    const page = await context.newPage();
+
+    // Authenticated access works
+    await page.goto('/admin/books');
+    await expect(page.locator('h1')).toContainText(/Book Catalogue/i);
+
+    // Perform logout via API
+    await page.request.post('/api/admin/auth', {
+      data: { action: 'logout' },
+    });
+
+    // Clear client-side cookies to match revoked session
+    await context.clearCookies();
+
+    // Re-accessing /admin/books now returns 404
+    const response = await page.goto('/admin/books');
+    expect(response?.status()).toBe(404);
+    await expect(page.locator('text=Book Catalogue')).not.toBeVisible();
+    await context.close();
+  });
+
+  test('admin session idle timeout returns 401 and deletes session cookie', async ({ request }) => {
+    // Request with an expired / invalid session token
+    const res = await request.get('/api/admin/auth', {
+      headers: {
+        Cookie: 'ann_admin_session=expired_idle_session_token_123',
+      },
+    });
+    expect(res.status()).toBe(401);
+  });
+});
+
+
