@@ -293,6 +293,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
           <button
             onClick={handleLogout}
+            data-testid="admin-logout-button"
             style={{
               border: 0,
               background: 'transparent',

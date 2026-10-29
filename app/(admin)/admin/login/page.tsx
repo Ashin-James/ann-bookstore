@@ -1,14 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Lock, Mail, Shield, KeyRound, AlertCircle, Sparkles } from 'lucide-react';
 
 export default function AdminLoginPage() {
   const router = useRouter();
 
-  const [email, setEmail] = useState('demo@annsbookstore.com');
-  const [password, setPassword] = useState('DemoAdmin2026!');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [totpCode, setTotpCode] = useState('');
   const [useRecoveryCode, setUseRecoveryCode] = useState(false);
   const [recoveryCode, setRecoveryCode] = useState('');
@@ -16,6 +16,22 @@ export default function AdminLoginPage() {
   const [tempToken, setTempToken] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showDemoUnsetNote, setShowDemoUnsetNote] = useState(false);
+
+  useEffect(() => {
+    async function checkConfig() {
+      try {
+        const res = await fetch('/api/admin/auth?action=config');
+        const json = await res.json();
+        if (json.success && json.data?.isDemoMode && !json.data?.demoConfigured) {
+          setShowDemoUnsetNote(true);
+        }
+      } catch {
+        // Silently ignore network probe errors
+      }
+    }
+    checkConfig();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +48,7 @@ export default function AdminLoginPage() {
         const data = await res.json();
 
         if (!data.success) {
-          setError(data.error?.message || 'Invalid credentials or account locked.');
+          setError(data.error?.message || 'Invalid email or password.');
           setLoading(false);
           return;
         }
@@ -132,30 +148,31 @@ export default function AdminLoginPage() {
           </p>
         </div>
 
-        {/* Demo Credentials Box */}
-        <div
-          style={{
-            backgroundColor: '#FDF4FF',
-            border: '1px solid #F5D0FE',
-            borderRadius: '8px',
-            padding: '12px 16px',
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: '10px',
-          }}
-        >
-          <Sparkles size={18} color="#86198F" style={{ flexShrink: 0, marginTop: '2px' }} aria-hidden="true" />
-          <div style={{ fontSize: '14px', color: '#701A75', lineHeight: 1.4 }}>
-            <strong>Demo Admin Credentials:</strong>
-            <br />
-            Email: <code>demo@annsbookstore.com</code>
-            <br />
-            Password: <code>DemoAdmin2026!</code>
+        {/* Note shown only if env vars are unset in demo mode */}
+        {showDemoUnsetNote && (
+          <div
+            style={{
+              backgroundColor: '#FDF4FF',
+              border: '1px solid #F5D0FE',
+              borderRadius: '8px',
+              padding: '10px 14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              color: '#701A75',
+              fontSize: '13px',
+              fontWeight: 600,
+            }}
+          >
+            <Sparkles size={16} color="#86198F" aria-hidden="true" />
+            <span>Demo admin</span>
           </div>
-        </div>
+        )}
 
         {error && (
           <div
+            id="admin-login-error"
+            data-testid="admin-login-error"
             role="alert"
             style={{
               backgroundColor: '#FEF2F2',

@@ -12,7 +12,7 @@ import { books } from '@/data/books';
 
 export const DEMO_ADMIN_USER: AdminUser = {
   id: 'usr_owner_demo',
-  email: 'demo@annsbookstore.com',
+  email: process.env.ADMIN_DEMO_EMAIL || 'admin@demo.local',
   fullName: 'Ann (Owner Demo)',
   role: 'owner',
   totpEnabled: false, // Optional in demo mode

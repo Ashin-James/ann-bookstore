@@ -17,6 +17,22 @@ export default function AdminSetupPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'form' | 'recovery'>('form');
+  const [setupDisabled, setSetupDisabled] = useState(false);
+
+  React.useEffect(() => {
+    async function checkSetup() {
+      try {
+        const res = await fetch('/api/admin/auth?action=setup_status');
+        const json = await res.json();
+        if (json.success && json.data?.available === false) {
+          setSetupDisabled(true);
+        }
+      } catch {
+        // Silently ignore probe errors
+      }
+    }
+    checkSetup();
+  }, []);
 
   const handleSetup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,7 +125,9 @@ export default function AdminSetupPage() {
             Initialize Store Owner
           </h1>
           <p style={{ color: '#6B7280', fontSize: '14px', margin: 0 }}>
-            One-time secure onboarding to create the initial root owner of Ann’s Bookstore.
+            {setupDisabled
+              ? 'Store owner setup is disabled because an owner account already exists.'
+              : 'One-time secure onboarding to create the initial root owner of Ann’s Bookstore.'}
           </p>
         </div>
 
@@ -133,7 +151,30 @@ export default function AdminSetupPage() {
           </div>
         )}
 
-        {step === 'form' ? (
+        {setupDisabled ? (
+          <div style={{ textAlign: 'center', padding: '12px 0' }}>
+            <p style={{ color: '#4B5563', fontSize: '14px', marginBottom: '20px' }}>
+              Setup has already been completed. The initial store owner account is already initialized and active.
+            </p>
+            <button
+              type="button"
+              onClick={() => router.push('/admin/login')}
+              style={{
+                minHeight: '44px',
+                padding: '10px 24px',
+                backgroundColor: '#722638',
+                color: '#FFFFFF',
+                border: 0,
+                borderRadius: '6px',
+                fontSize: '14px',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Go to Staff Login →
+            </button>
+          </div>
+        ) : step === 'form' ? (
           <form onSubmit={handleSetup} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div>
               <label htmlFor="setup-secret" style={{ display: 'block', fontSize: '14px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>

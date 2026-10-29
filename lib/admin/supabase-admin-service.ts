@@ -15,6 +15,15 @@ import {
   VariantRecord,
 } from './types';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import {
+  checkLockout,
+  clearFailedAttempts,
+  generateRecoveryCodes,
+  generateSessionToken,
+  generateTotpSecret,
+  recordFailedAttempt,
+  SESSION_MAX_AGE_MS,
+} from './auth';
 
 export class SupabaseAdminService implements AdminService {
   private client: SupabaseClient | null = null;
@@ -36,7 +45,85 @@ export class SupabaseAdminService implements AdminService {
 
   async login(params: Parameters<AdminService['login']>[0]): Promise<Result<{ requireTotp: boolean; session?: AdminSession; tempToken?: string }>> {
     if (!this.client) return this.fallback.login(params);
-    return this.fallback.login(params);
+
+    const lockout = checkLockout(params.email);
+    if (lockout.locked) {
+      return {
+        success: false,
+        error: {
+          code: 'LOCKED_OUT',
+          message: `Account locked after 5 failed attempts. Please retry in ${lockout.remainingMinutes} minutes.`,
+        },
+      };
+    }
+
+    try {
+      const { data: authData, error: authError } = await this.client.auth.signInWithPassword({
+        email: params.email,
+        password: params.password,
+      });
+
+      if (authError || !authData.user) {
+        const lockRes = recordFailedAttempt(params.email);
+        if (lockRes.locked) {
+          return {
+            success: false,
+            error: {
+              code: 'LOCKED_OUT',
+              message: 'Account locked after 5 failed attempts. Please retry in 15 minutes.',
+            },
+          };
+        }
+        return {
+          success: false,
+          error: { code: 'UNAUTHORIZED', message: 'Invalid email or password.' },
+        };
+      }
+
+      const { data: profile, error: profileErr } = await this.client
+        .from('profiles')
+        .select('*')
+        .eq('id', authData.user.id)
+        .single();
+
+      if (profileErr || !profile) {
+        return {
+          success: false,
+          error: { code: 'FORBIDDEN', message: 'No staff profile associated with this account.' },
+        };
+      }
+
+      if (profile.disabled) {
+        return {
+          success: false,
+          error: { code: 'FORBIDDEN', message: 'This staff account has been deactivated.' },
+        };
+      }
+
+      clearFailedAttempts(params.email);
+
+      const user: AdminUser = {
+        id: profile.id,
+        email: profile.email,
+        fullName: profile.full_name,
+        role: profile.role,
+        totpEnabled: Boolean(profile.totp_enabled),
+        disabled: Boolean(profile.disabled),
+        lastLoginAt: new Date().toISOString(),
+        createdAt: profile.created_at,
+      };
+
+      const session: AdminSession = {
+        token: generateSessionToken(),
+        user,
+        expiresAt: new Date(Date.now() + SESSION_MAX_AGE_MS).toISOString(),
+        lastActiveAt: new Date().toISOString(),
+      };
+
+      return { success: true, data: { requireTotp: false, session } };
+    } catch {
+      return this.fallback.login(params);
+    }
   }
 
   async verifyTotp(params: Parameters<AdminService['verifyTotp']>[0]): Promise<Result<{ session: AdminSession }>> {
@@ -51,7 +138,117 @@ export class SupabaseAdminService implements AdminService {
 
   async setupOwner(params: Parameters<AdminService['setupOwner']>[0]): Promise<Result<{ session: AdminSession; recoveryCodes: string[]; totpSecret: string }>> {
     if (!this.client) return this.fallback.setupOwner(params);
-    return this.fallback.setupOwner(params);
+
+    const available = await this.isSetupAvailable();
+    if (!available) {
+      return {
+        success: false,
+        error: { code: 'SETUP_DISABLED', message: 'Setup is disabled: an owner account already exists.' },
+      };
+    }
+
+    const validSecret = process.env.SETUP_SECRET;
+    if (!validSecret || params.setupSecret !== validSecret) {
+      return {
+        success: false,
+        error: { code: 'FORBIDDEN', message: 'Invalid setup secret key.' },
+      };
+    }
+
+    if (params.password.length < 12) {
+      return {
+        success: false,
+        error: { code: 'INVALID_INPUT', message: 'Password must be at least 12 characters.' },
+      };
+    }
+
+    try {
+      const { plainCodes, hashedCodes } = generateRecoveryCodes();
+      const totpSecret = generateTotpSecret();
+
+      let userId: string;
+      const { data: authData, error: authError } = await this.client.auth.admin.createUser({
+        email: params.email,
+        password: params.password,
+        email_confirm: true,
+        user_metadata: { full_name: params.fullName, role: 'owner' },
+      });
+
+      if (authError || !authData.user) {
+        const { data: signUpData, error: signUpError } = await this.client.auth.signUp({
+          email: params.email,
+          password: params.password,
+          options: { data: { full_name: params.fullName, role: 'owner' } },
+        });
+        if (signUpError || !signUpData.user) {
+          return {
+            success: false,
+            error: { code: 'INTERNAL_ERROR', message: authError?.message || signUpError?.message || 'Failed to create user' },
+          };
+        }
+        userId = signUpData.user.id;
+      } else {
+        userId = authData.user.id;
+      }
+
+      const { error: profileError } = await this.client.from('profiles').insert({
+        id: userId,
+        email: params.email,
+        full_name: params.fullName,
+        role: 'owner',
+        totp_secret: totpSecret,
+        totp_enabled: true,
+        disabled: false,
+        last_login_at: new Date().toISOString(),
+      });
+
+      if (profileError) {
+        return {
+          success: false,
+          error: { code: 'INTERNAL_ERROR', message: `Profile creation failed: ${profileError.message}` },
+        };
+      }
+
+      for (const codeHash of hashedCodes) {
+        await this.client.from('recovery_codes').insert({
+          profile_id: userId,
+          code_hash: codeHash,
+          used: false,
+        });
+      }
+
+      await this.client.from('audit_log').insert({
+        actor_id: userId,
+        actor_email: params.email,
+        action: 'setup.create_owner',
+        entity: 'staff',
+        entity_id: userId,
+        ip_hash: params.ipHash,
+      });
+
+      const session: AdminSession = {
+        token: generateSessionToken(),
+        user: {
+          id: userId,
+          email: params.email,
+          fullName: params.fullName,
+          role: 'owner',
+          totpEnabled: true,
+          disabled: false,
+          lastLoginAt: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+        },
+        expiresAt: new Date(Date.now() + SESSION_MAX_AGE_MS).toISOString(),
+        lastActiveAt: new Date().toISOString(),
+      };
+
+      return {
+        success: true,
+        data: { session, recoveryCodes: plainCodes, totpSecret },
+      };
+    } catch {
+      return this.fallback.setupOwner(params);
+    }
   }
 
   async getSession(token: string): Promise<Result<AdminSession>> {
@@ -71,7 +268,16 @@ export class SupabaseAdminService implements AdminService {
 
   async isSetupAvailable(): Promise<boolean> {
     if (!this.client) return this.fallback.isSetupAvailable();
-    return this.fallback.isSetupAvailable();
+    try {
+      const { count, error } = await this.client
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('role', 'owner');
+      if (error) return this.fallback.isSetupAvailable();
+      return (count ?? 0) === 0;
+    } catch {
+      return this.fallback.isSetupAvailable();
+    }
   }
 
   async listStaff(): Promise<Result<AdminUser[]>> {

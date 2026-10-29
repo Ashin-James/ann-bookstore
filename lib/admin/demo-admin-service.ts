@@ -29,9 +29,11 @@ import {
   generateRecoveryCodes,
   generateSessionToken,
   generateTotpSecret,
+  hashPassword,
   recordFailedAttempt,
   SESSION_IDLE_TIMEOUT_MS,
   SESSION_MAX_AGE_MS,
+  verifyPassword,
 } from './auth';
 
 const STORAGE_PREFIX = 'ann_admin_v1_';
@@ -47,6 +49,7 @@ interface DemoDataStore {
   reviews: ReviewRecord[];
   subscribers: SubscriberRecord[];
   setupCompleted: boolean;
+  passwords?: Record<string, string>;
 }
 
 export class DemoAdminService implements AdminService {
@@ -122,7 +125,8 @@ export class DemoAdminService implements AdminService {
       coupons: seedCoupons,
       reviews: seedReviews,
       subscribers: seedSubscribers,
-      setupCompleted: true,
+      setupCompleted: false,
+      passwords: {},
     };
 
     return initialStore;
@@ -170,10 +174,24 @@ export class DemoAdminService implements AdminService {
       };
     }
 
-    const user = this.store.staff.find((s) => s.email.toLowerCase() === params.email.toLowerCase());
-    const isDemoOwner = params.email.toLowerCase() === 'demo@annsbookstore.com' && params.password === 'DemoAdmin2026!';
+    const envDemoEmail = process.env.ADMIN_DEMO_EMAIL?.trim();
+    const envDemoPassword = process.env.ADMIN_DEMO_PASSWORD;
+    const isEnvDemoOwner = Boolean(
+      envDemoEmail &&
+      envDemoPassword &&
+      params.email.trim().toLowerCase() === envDemoEmail.toLowerCase() &&
+      params.password === envDemoPassword
+    );
 
-    if (!user && !isDemoOwner) {
+    const user = this.store.staff.find((s) => s.email.toLowerCase() === params.email.trim().toLowerCase());
+    const hasPasswordMatch = Boolean(
+      user &&
+      this.store.passwords &&
+      this.store.passwords[params.email.trim().toLowerCase()] &&
+      verifyPassword(params.password, this.store.passwords[params.email.trim().toLowerCase()])
+    );
+
+    if (!isEnvDemoOwner && !hasPasswordMatch) {
       const lockRes = recordFailedAttempt(params.email);
       if (lockRes.locked) {
         return {
@@ -198,18 +216,31 @@ export class DemoAdminService implements AdminService {
     }
 
     clearFailedAttempts(params.email);
-    const activeUser = user || DEMO_ADMIN_USER;
+    let activeUser = user;
+    if (!activeUser && isEnvDemoOwner) {
+      activeUser = {
+        id: 'usr_owner_demo',
+        email: envDemoEmail!,
+        fullName: 'Ann (Owner Demo)',
+        role: 'owner',
+        totpEnabled: false,
+        disabled: false,
+        lastLoginAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+      };
+      this.store.staff.unshift(activeUser);
+    }
 
     const session: AdminSession = {
       token: generateSessionToken(),
-      user: activeUser,
+      user: activeUser!,
       expiresAt: new Date(Date.now() + SESSION_MAX_AGE_MS).toISOString(),
       lastActiveAt: new Date().toISOString(),
     };
 
     this.store.sessions.push(session);
     this.addAudit({
-      actorEmail: activeUser.email,
+      actorEmail: activeUser!.email,
       action: 'auth.login',
       entity: 'session',
       entityId: session.token.slice(0, 8),
@@ -260,6 +291,14 @@ export class DemoAdminService implements AdminService {
     ipHash: string;
     userAgent: string;
   }): Promise<Result<{ session: AdminSession; recoveryCodes: string[]; totpSecret: string }>> {
+    const available = await this.isSetupAvailable();
+    if (!available) {
+      return {
+        success: false,
+        error: { code: 'SETUP_DISABLED', message: 'Setup is disabled: an owner account already exists.' },
+      };
+    }
+
     const validSecret = process.env.SETUP_SECRET || 'ann-bookstore-setup-2026';
     if (params.setupSecret !== validSecret) {
       return {
@@ -289,8 +328,14 @@ export class DemoAdminService implements AdminService {
       createdAt: new Date().toISOString(),
     };
 
+    if (!this.store.passwords) {
+      this.store.passwords = {};
+    }
+    this.store.passwords[params.email.toLowerCase()] = hashPassword(params.password);
+
     this.store.staff.push(owner);
     this.store.setupCompleted = true;
+    this.persistStore();
 
     const session: AdminSession = {
       token: generateSessionToken(),
@@ -356,7 +401,7 @@ export class DemoAdminService implements AdminService {
   }
 
   async isSetupAvailable(): Promise<boolean> {
-    return !this.store.setupCompleted;
+    return !this.store.setupCompleted && !this.store.staff.some((s) => s.role === 'owner' && s.id !== 'usr_owner_demo');
   }
 
   // Staff Management
@@ -1095,12 +1140,5 @@ export class DemoAdminService implements AdminService {
   }
 }
 
-// Singleton Instance Holder
-let adminServiceInstance: AdminService | null = null;
+export { getAdminService, resetAdminServiceInstance } from './service-factory';
 
-export function getAdminService(): AdminService {
-  if (!adminServiceInstance) {
-    adminServiceInstance = new DemoAdminService();
-  }
-  return adminServiceInstance;
-}
