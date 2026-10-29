@@ -15,18 +15,22 @@ export function Cover({
   size?: 'default' | 'sm' | 'xs';
   className?: string;
 }) {
+  const isImageCover = book.cover?.startsWith('data:') || book.cover?.startsWith('http') || book.cover?.startsWith('/');
+  const altText = book.coverAlt || `Cover artwork for ${book.title}`;
+
   if (size === 'xs') {
     return (
       <div
-        className={`book-cover-thumb cover-${book.cover} ${className}`.trim()}
-        aria-label={`Cover artwork for ${book.title}`}
+        className={`book-cover-thumb ${isImageCover ? '' : `cover-${book.cover}`} ${className}`.trim()}
+        aria-label={altText}
         role="img"
+        style={isImageCover ? { backgroundImage: `url(${book.cover})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
       >
         <div className="book-spine-hinge-thumb" aria-hidden="true" />
         <div className="book-pages-block-thumb" aria-hidden="true" />
         <div className="book-linen-texture" aria-hidden="true" />
         <div className="book-emboss-frame-thumb" aria-hidden="true">
-          <span className="cover-author-thumb">ANN</span>
+          <span className="cover-author-thumb">{book.author || 'ANN'}</span>
           <span className="cover-title-thumb">{book.title}</span>
         </div>
       </div>
@@ -36,15 +40,16 @@ export function Cover({
   if (size === 'sm') {
     return (
       <div
-        className={`book-cover-sm cover-${book.cover} ${className}`.trim()}
-        aria-label={`Cover artwork for ${book.title}`}
+        className={`book-cover-sm ${isImageCover ? '' : `cover-${book.cover}`} ${className}`.trim()}
+        aria-label={altText}
         role="img"
+        style={isImageCover ? { backgroundImage: `url(${book.cover})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
       >
         <div className="book-spine-hinge-sm" aria-hidden="true" />
         <div className="book-pages-block-sm" aria-hidden="true" />
         <div className="book-linen-texture" aria-hidden="true" />
         <div className="book-emboss-frame-sm" aria-hidden="true">
-          <span className="cover-author-sm">ANN</span>
+          <span className="cover-author-sm">{book.author || 'ANN'}</span>
           <div className="cover-title-sm">{book.title}</div>
           <div className="cover-rule-sm" />
           <span className="cover-subtitle-sm">{book.category}</span>
@@ -55,9 +60,10 @@ export function Cover({
 
   return (
     <div
-      className={`book-cover cover-${book.cover} ${className}`.trim()}
-      aria-label={`Cover artwork for ${book.title}`}
+      className={`book-cover ${isImageCover ? '' : `cover-${book.cover}`} ${className}`.trim()}
+      aria-label={altText}
       role="img"
+      style={isImageCover ? { backgroundImage: `url(${book.cover})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
     >
       <div className="book-spine-hinge" aria-hidden="true" />
       <div className="book-pages-block" aria-hidden="true" />
@@ -65,7 +71,7 @@ export function Cover({
       <div className="book-ribbon-bookmark" aria-hidden="true" />
       <div className="book-emboss-frame" aria-hidden="true">
         <span className="cover-author" aria-hidden="true">
-          ANN
+          {book.author || 'ANN'}
         </span>
         <div className="cover-title" aria-hidden="true">
           {book.title}
@@ -75,7 +81,7 @@ export function Cover({
           {book.note || book.category}
         </span>
         <span className="cover-bottom" aria-hidden="true">
-          A STORY BY ANN
+          A STORY BY {book.author || 'ANN'}
         </span>
       </div>
     </div>

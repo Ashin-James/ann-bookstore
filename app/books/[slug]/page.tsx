@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { notFound, useParams } from 'next/navigation';
 import { useState } from 'react';
 import { ArrowLeft, ArrowRight, Heart, ShieldCheck, ShoppingBag, BookOpen } from 'lucide-react';
-import { books } from '@/data/books';
+import { useStorefrontBooks } from '@/lib/use-storefront-books';
 import { money } from '@/src/config/site.config';
 import { Cover, BookGrid } from '@/components/book-card';
 import { useStore } from '@/contexts/store-context';
@@ -14,6 +14,7 @@ import Reveal from '@/components/reveal';
 
 export default function BookDetail() {
   const params = useParams<{ slug: string }>();
+  const books = useStorefrontBooks();
   const book = books.find((b) => b.slug === params.slug);
   const [formatId, setFormatId] = useState(book?.formats[0]?.id || '');
   const [qty, setQty] = useState(1);

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Lock, Mail, Shield, KeyRound, AlertCircle, Sparkles } from 'lucide-react';
 
 export default function AdminLoginPage() {
-  const router = useRouter();
+  const _router = useRouter();
 
   const [email, setEmail] = useState('demo@annsbookstore.com');
   const [password, setPassword] = useState('DemoAdmin2026!');
@@ -45,7 +45,7 @@ export default function AdminLoginPage() {
         }
 
         // Successfully authenticated!
-        router.push('/admin/dashboard');
+        window.location.href = '/admin/dashboard';
       } else {
         // Step TOTP or Recovery Code
         const payload = useRecoveryCode
@@ -65,7 +65,7 @@ export default function AdminLoginPage() {
           return;
         }
 
-        router.push('/admin/dashboard');
+        window.location.href = '/admin/dashboard';
       }
     } catch {
       setError('An error occurred during authentication. Please retry.');

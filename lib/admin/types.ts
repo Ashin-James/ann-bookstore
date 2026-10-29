@@ -134,6 +134,7 @@ export interface BookRecord {
   description: string;
   shortDescription: string;
   cover: string;
+  coverAlt?: string;
   status: 'draft' | 'scheduled' | 'published' | 'archived';
   variants: VariantRecord[];
   featured?: boolean;

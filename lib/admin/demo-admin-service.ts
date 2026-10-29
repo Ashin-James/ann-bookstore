@@ -656,6 +656,240 @@ export class DemoAdminService implements AdminService {
     return { success: true, data: book };
   }
 
+  async createBook(params: {
+    book: Omit<BookRecord, 'id'>;
+    actorEmail: string;
+    ipHash: string;
+  }): Promise<Result<BookRecord>> {
+    const { book, actorEmail, ipHash } = params;
+
+    if (!book.title || !book.title.trim()) {
+      return { success: false, error: { code: 'INVALID_INPUT', message: 'Book title is required.' } };
+    }
+
+    // Slug generation and uniqueness check
+    let slug = (book.slug || '')
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+
+    if (!slug) {
+      slug = book.title
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+    }
+
+    if (this.store.books.some((b) => b.slug === slug)) {
+      slug = `${slug}-${Date.now().toString(36).slice(-4)}`;
+    }
+
+    // Cover alt text requirement check
+    if (book.cover && !book.coverAlt?.trim()) {
+      return {
+        success: false,
+        error: { code: 'INVALID_INPUT', message: 'Cover upload requires alt text for accessibility.' },
+      };
+    }
+
+    const newBookId = `book_${Date.now()}`;
+    const variants: VariantRecord[] = (book.variants && book.variants.length > 0)
+      ? book.variants.map((v, i) => ({
+          ...v,
+          id: v.id || `var_${newBookId}_${i + 1}`,
+          bookId: newBookId,
+          sku: v.sku || `ANN-${newBookId.slice(-4).toUpperCase()}-${v.format.toUpperCase().slice(0, 2)}`,
+        }))
+      : [
+          {
+            id: `var_${newBookId}_1`,
+            bookId: newBookId,
+            format: 'Paperback',
+            price: 1800,
+            compareAtPrice: 2200,
+            cost: 540,
+            isDemoCost: true,
+            sku: `ANN-${newBookId.slice(-4).toUpperCase()}-PB`,
+            stock: 50,
+            lowStockThreshold: 10,
+            weightGrams: 380,
+            signedEdition: false,
+            personalization: false,
+          },
+        ];
+
+    const newBook: BookRecord = {
+      ...book,
+      id: newBookId,
+      slug,
+      coverAlt: book.coverAlt?.trim() || `Cover of ${book.title}`,
+      variants,
+      status: book.status || 'published',
+      tags: book.tags || ['fiction', 'literary'],
+      moods: book.moods || ['reflective'],
+    };
+
+    this.store.books.unshift(newBook);
+    this.persistStore();
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('ann_books_updated', { detail: this.store.books }));
+    }
+
+    this.addAudit({
+      actorEmail,
+      action: 'books.create',
+      entity: 'book',
+      entityId: newBook.slug,
+      after: { title: newBook.title, slug: newBook.slug, status: newBook.status },
+      ipHash,
+    });
+
+    return { success: true, data: newBook };
+  }
+
+  async updateBook(params: {
+    id: string;
+    book: Partial<BookRecord>;
+    actorEmail: string;
+    ipHash: string;
+  }): Promise<Result<BookRecord>> {
+    const existing = this.store.books.find((b) => b.id === params.id || b.slug === params.id);
+    if (!existing) {
+      return { success: false, error: { code: 'NOT_FOUND', message: 'Book not found.' } };
+    }
+
+    if (params.book.cover && params.book.cover !== existing.cover && !params.book.coverAlt?.trim()) {
+      return {
+        success: false,
+        error: { code: 'INVALID_INPUT', message: 'Cover upload requires alt text for accessibility.' },
+      };
+    }
+
+    const beforeState = { ...existing };
+    Object.assign(existing, params.book);
+
+    // If slug was updated and empty, regenerate from title
+    if (params.book.title && (!existing.slug || existing.slug.trim() === '')) {
+      existing.slug = existing.title
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+    }
+
+    this.persistStore();
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('ann_books_updated', { detail: this.store.books }));
+    }
+
+    this.addAudit({
+      actorEmail: params.actorEmail,
+      action: 'books.update',
+      entity: 'book',
+      entityId: existing.slug,
+      before: { title: beforeState.title, status: beforeState.status },
+      after: { title: existing.title, status: existing.status },
+      ipHash: params.ipHash,
+    });
+
+    return { success: true, data: existing };
+  }
+
+  async archiveBook(params: {
+    id: string;
+    actorEmail: string;
+    ipHash: string;
+  }): Promise<Result<BookRecord>> {
+    const existing = this.store.books.find((b) => b.id === params.id || b.slug === params.id);
+    if (!existing) {
+      return { success: false, error: { code: 'NOT_FOUND', message: 'Book not found.' } };
+    }
+
+    const prevStatus = existing.status;
+    existing.status = existing.status === 'archived' ? 'published' : 'archived';
+    this.persistStore();
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('ann_books_updated', { detail: this.store.books }));
+    }
+
+    this.addAudit({
+      actorEmail: params.actorEmail,
+      action: 'books.archive',
+      entity: 'book',
+      entityId: existing.slug,
+      before: { status: prevStatus },
+      after: { status: existing.status },
+      ipHash: params.ipHash,
+    });
+
+    return { success: true, data: existing };
+  }
+
+  async deleteBook(params: {
+    id: string;
+    actorEmail: string;
+    ipHash: string;
+  }): Promise<Result<BookRecord>> {
+    const index = this.store.books.findIndex((b) => b.id === params.id || b.slug === params.id);
+    if (index === -1) {
+      return { success: false, error: { code: 'NOT_FOUND', message: 'Book not found.' } };
+    }
+
+    const removed = this.store.books.splice(index, 1)[0];
+    this.persistStore();
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('ann_books_updated', { detail: this.store.books }));
+    }
+
+    this.addAudit({
+      actorEmail: params.actorEmail,
+      action: 'books.delete',
+      entity: 'book',
+      entityId: removed.slug,
+      before: { title: removed.title, id: removed.id },
+      after: null,
+      ipHash: params.ipHash,
+    });
+
+    return { success: true, data: removed };
+  }
+
+  async restoreBook(params: {
+    book: BookRecord;
+    actorEmail: string;
+    ipHash: string;
+  }): Promise<Result<BookRecord>> {
+    const existingIndex = this.store.books.findIndex((b) => b.id === params.book.id || b.slug === params.book.slug);
+    if (existingIndex >= 0) {
+      this.store.books[existingIndex] = params.book;
+    } else {
+      this.store.books.unshift(params.book);
+    }
+
+    this.persistStore();
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('ann_books_updated', { detail: this.store.books }));
+    }
+
+    this.addAudit({
+      actorEmail: params.actorEmail,
+      action: 'books.restore',
+      entity: 'book',
+      entityId: params.book.slug,
+      after: { title: params.book.title, id: params.book.id },
+      ipHash: params.ipHash,
+    });
+
+    return { success: true, data: params.book };
+  }
+
   async updateVariantCost(params: {
     variantId: string;
     costCents: number;

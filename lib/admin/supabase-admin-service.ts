@@ -144,6 +144,31 @@ export class SupabaseAdminService implements AdminService {
     return this.fallback.getBook(idOrSlug);
   }
 
+  async createBook(params: Parameters<AdminService['createBook']>[0]): Promise<Result<BookRecord>> {
+    if (!this.client) return this.fallback.createBook(params);
+    return this.fallback.createBook(params);
+  }
+
+  async updateBook(params: Parameters<AdminService['updateBook']>[0]): Promise<Result<BookRecord>> {
+    if (!this.client) return this.fallback.updateBook(params);
+    return this.fallback.updateBook(params);
+  }
+
+  async archiveBook(params: Parameters<AdminService['archiveBook']>[0]): Promise<Result<BookRecord>> {
+    if (!this.client) return this.fallback.archiveBook(params);
+    return this.fallback.archiveBook(params);
+  }
+
+  async deleteBook(params: Parameters<AdminService['deleteBook']>[0]): Promise<Result<BookRecord>> {
+    if (!this.client) return this.fallback.deleteBook(params);
+    return this.fallback.deleteBook(params);
+  }
+
+  async restoreBook(params: Parameters<AdminService['restoreBook']>[0]): Promise<Result<BookRecord>> {
+    if (!this.client) return this.fallback.restoreBook(params);
+    return this.fallback.restoreBook(params);
+  }
+
   async updateVariantCost(params: Parameters<AdminService['updateVariantCost']>[0]): Promise<Result<VariantRecord>> {
     if (!this.client) return this.fallback.updateVariantCost(params);
     return this.fallback.updateVariantCost(params);

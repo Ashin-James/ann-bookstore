@@ -10,10 +10,13 @@ export type Book = {
   id: string;
   slug: string;
   title: string;
+  author?: string;
   category: string;
   description: string;
   shortDescription: string;
   cover: string;
+  coverAlt?: string;
+  status?: 'draft' | 'scheduled' | 'published' | 'archived';
   formats: BookFormat[];
   featured?: boolean;
   note?: string;
@@ -92,3 +95,74 @@ export { money };
  * Backward compatibility alias for components during US transition
  */
 export const formatINR = money;
+
+export interface RawVariant {
+  id?: string;
+  format: string;
+  price: number;
+}
+
+export interface RawBookRecord {
+  id: string;
+  slug: string;
+  title: string;
+  author?: string;
+  category?: string;
+  description?: string;
+  shortDescription?: string;
+  cover?: string;
+  coverAlt?: string;
+  status?: 'draft' | 'scheduled' | 'published' | 'archived';
+  featured?: boolean;
+  subtitle?: string;
+  variants?: RawVariant[];
+}
+
+export function convertRecordToBook(record: RawBookRecord): Book {
+  return {
+    id: record.id,
+    slug: record.slug,
+    title: record.title,
+    author: record.author || 'Ann',
+    category: record.category || 'Novel',
+    description: record.description || '',
+    shortDescription: record.shortDescription || '',
+    cover: record.cover || 'quiet',
+    coverAlt: record.coverAlt || `Cover artwork for ${record.title}`,
+    status: record.status || 'published',
+    featured: Boolean(record.featured),
+    note: record.subtitle || (record.author ? `A story by ${record.author}` : undefined),
+    formats: (record.variants && record.variants.length > 0)
+      ? record.variants.map((v: RawVariant) => ({
+          id: v.id || `var_${v.format}`,
+          name: v.format,
+          price: v.price,
+        }))
+      : [
+          { id: `${record.id}-pb`, name: 'Paperback', price: 1800 },
+        ],
+  };
+}
+
+export function getStorefrontBooks(): Book[] {
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = window.localStorage.getItem('ann_admin_v1_store');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed.books) && parsed.books.length > 0) {
+          return (parsed.books as RawBookRecord[])
+            .filter((b: RawBookRecord) => b.status === 'published' || !b.status)
+            .map(convertRecordToBook);
+        }
+      }
+    } catch {
+      // Fallback
+    }
+  }
+  return books;
+}
+
+export function getStorefrontBookBySlug(slug: string): Book | undefined {
+  return getStorefrontBooks().find((b) => b.slug === slug);
+}

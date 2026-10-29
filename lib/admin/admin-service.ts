@@ -109,6 +109,32 @@ export interface AdminService {
   // Commerce: Books & Variants
   listBooks(): Promise<Result<BookRecord[]>>;
   getBook(idOrSlug: string): Promise<Result<BookRecord>>;
+  createBook(params: {
+    book: Omit<BookRecord, 'id'>;
+    actorEmail: string;
+    ipHash: string;
+  }): Promise<Result<BookRecord>>;
+  updateBook(params: {
+    id: string;
+    book: Partial<BookRecord>;
+    actorEmail: string;
+    ipHash: string;
+  }): Promise<Result<BookRecord>>;
+  archiveBook(params: {
+    id: string;
+    actorEmail: string;
+    ipHash: string;
+  }): Promise<Result<BookRecord>>;
+  deleteBook(params: {
+    id: string;
+    actorEmail: string;
+    ipHash: string;
+  }): Promise<Result<BookRecord>>;
+  restoreBook(params: {
+    book: BookRecord;
+    actorEmail: string;
+    ipHash: string;
+  }): Promise<Result<BookRecord>>;
   updateVariantCost(params: {
     variantId: string;
     costCents: number;

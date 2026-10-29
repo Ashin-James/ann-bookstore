@@ -3,13 +3,14 @@
 import { Suspense, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Search, SlidersHorizontal } from 'lucide-react';
-import { books } from '@/data/books';
+import { useStorefrontBooks } from '@/lib/use-storefront-books';
 import { BookGrid } from '@/components/book-card';
 import Container from '@/components/container';
 import Section from '@/components/section';
 import Reveal from '@/components/reveal';
 
 function BooksContent() {
+  const books = useStorefrontBooks();
   const params = useSearchParams();
   const [q, setQ] = useState(params.get('q') || '');
   const [category, setCategory] = useState('All books');
@@ -31,7 +32,7 @@ function BooksContent() {
       result = [...result].sort((a, b) => a.title.localeCompare(b.title));
     }
     return result;
-  }, [q, category, sort]);
+  }, [books, q, category, sort]);
 
   return (
     <Section>
