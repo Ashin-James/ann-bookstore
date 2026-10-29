@@ -1,13 +1,29 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowUpRight, Clock, Calendar, Sparkles } from 'lucide-react';
-import { journalArticles } from '@/data/journal';
+import { JournalArticle, getStorefrontJournalArticles } from '@/data/journal';
 import Container from '@/components/container';
 import Section from '@/components/section';
 import Reveal from '@/components/reveal';
 
 export default function JournalPage() {
+  const [articles, setArticles] = useState<JournalArticle[]>(() => getStorefrontJournalArticles());
+
+  useEffect(() => {
+    const sync = () => {
+      setArticles(getStorefrontJournalArticles());
+    };
+    sync();
+    window.addEventListener('ann_journal_updated', sync);
+    window.addEventListener('storage', sync);
+    return () => {
+      window.removeEventListener('ann_journal_updated', sync);
+      window.removeEventListener('storage', sync);
+    };
+  }, []);
+
   return (
     <Section className="journal-page-section">
       <Container style={{ maxWidth: '960px' }}>
@@ -26,9 +42,9 @@ export default function JournalPage() {
         </Reveal>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '28px', marginTop: '20px' }}>
-          {journalArticles.map((article, idx) => (
+          {articles.map((article, idx) => (
             <Reveal key={article.id} variant="fadeUp" delay={idx * 0.12}>
-              <article className="journal-article-item">
+              <article className="journal-article-item" data-testid={`journal-card-${article.slug}`}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '14px', color: 'var(--muted)', flexWrap: 'wrap' }}>
                   <span
                     style={{

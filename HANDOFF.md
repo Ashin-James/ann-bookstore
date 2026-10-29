@@ -1,7 +1,7 @@
 # HANDOFF: Ann's Bookstore Demo (feat/admin)
 
 ## Current Status
-- Task A (Admin Login Credentials), Task A2 (Signed Sessions), Task A3 (Stateless Demo Sessions & Secret Rotation), Task SEC1 (Remove Hard-coded Credentials), Task B (Staff Sign-in Link), and Task C (Customer Registration & Auth) completed and verified.
+- Task A (Admin Login Credentials), Task A2 (Signed Sessions), Task A3 (Stateless Demo Sessions & Secret Rotation), Task SEC1 (Remove Hard-coded Credentials), Task B (Staff Sign-in Link), Task C (Customer Registration & Auth), and Task G (Journal Editor) completed and verified.
 
 ## Done
 - Part 0 baseline verification and health API.
@@ -40,15 +40,27 @@
   - Failed logins: generic error message, 5 failed attempts lock the account for 15 minutes.
   - Auth isolation: customer session cookie `ann_session` is isolated from admin routes; customer cookies return 404 on `/admin/*`.
   - Existing `/account` pages preserved and functional (`account-hub.spec.ts` 24/24 passing).
+- Task G Journal Editor (admin):
+  - Installed `@tiptap/react`, `@tiptap/pm`, `@tiptap/starter-kit`, `@tiptap/extension-link`, and `@tiptap/extension-image` (install size: 6.25 MB).
+  - Admin page `/admin/journal`: RBAC restricted to `owner`, `admin`, `editor` (`support` and customer/signed-out users receive 404). Editor role restricted from `/admin/orders` (404).
+  - Editor features: TipTap rich text (headings, bold, italic, lists, quote, links, images requiring alt text before insertion), cover image with required alt text, category, related book selector, auto reading time calculation, SEO title/description, live preview using public journal styles, sanitization of scripts and inline handlers.
+  - Status management: `draft`, `scheduled` (with publish date), `published`. Drafts and future-dated posts return 404 publicly and never appear in public listings.
+  - Post revision history: keeps last 10 revisions per post with one-click restore.
+  - Deletion: requires typing post title to confirm.
+  - Multi-language: UI strings translated across all 14 shipped languages.
+  - Demo store persistence in `ann_admin_v1_store` (browser-local).
+  - Additive Supabase migration in `supabase/migrations/20261030000000_journal.sql`.
 
 ## NOT DONE
 - Real-mode session revocation: persistent Supabase `sessions` table is not yet wired up; in demo mode, session invalidation on logout is cookie-deletion only (copied tokens remain valid until expiry).
 - Real-mode customer persistence: persistent Supabase Auth customer user tables not wired up in demo mode (in-memory demo store used).
+- Real-mode Supabase journal persistence live verification: `supabase/migrations/20261030000000_journal.sql` and service methods are implemented but marked BUILT-NOT-VERIFIED due to absent live Supabase credentials.
 
 ## How to Run
 - Lint: `npm run lint`
 - Typecheck: `npx tsc --noEmit`
 - Production Build: `npm run build`
+- Task G e2e: `PLAYWRIGHT_TEST_BASE_URL=http://localhost:3005 npx playwright test tests/e2e/task-g-journal.spec.ts`
 - Task C e2e: `PLAYWRIGHT_TEST_BASE_URL=http://localhost:3005 npx playwright test tests/e2e/task-c-customer-auth.spec.ts`
 - Account Hub e2e: `PLAYWRIGHT_TEST_BASE_URL=http://localhost:3005 npx playwright test tests/e2e/account-hub.spec.ts`
 - Task B e2e: `PLAYWRIGHT_TEST_BASE_URL=http://localhost:3005 npx playwright test tests/e2e/task-b-staff-link.spec.ts`
@@ -56,4 +68,4 @@
 - Task A e2e: `PLAYWRIGHT_TEST_BASE_URL=http://localhost:3005 npx playwright test tests/e2e/task-a-auth.spec.ts`
 
 ## Exact Next Step
-- Task D: Await user request for Task D. Do not start Task D.
+- Task H: Await user request for Task H. Do not start Task H.

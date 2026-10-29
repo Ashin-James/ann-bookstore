@@ -1,29 +1,51 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import { ArrowLeft, ArrowUpRight, Calendar, Clock } from 'lucide-react';
-import { journalArticles } from '@/data/journal';
+import { JournalArticle, getStorefrontJournalArticleBySlug } from '@/data/journal';
 import { books } from '@/data/books';
 import Container from '@/components/container';
 import Section from '@/components/section';
 
-export function generateStaticParams() {
-  return journalArticles.map((article) => ({ slug: article.slug }));
-}
+export default function JournalArticlePage() {
+  const params = useParams<{ slug: string }>();
+  const slug = params?.slug as string;
 
-export default async function JournalArticlePage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
-  const { slug } = await params;
-  const article = journalArticles.find((a) => a.slug === slug);
+  const [article, setArticle] = useState<JournalArticle | undefined | null>(() => {
+    if (typeof window !== 'undefined' && slug) {
+      return getStorefrontJournalArticleBySlug(slug);
+    }
+    return undefined;
+  });
+  const [mounted, setMounted] = useState(false);
 
-  if (!article) {
-    notFound();
+  useEffect(() => {
+    setMounted(true);
+    if (slug) {
+      const found = getStorefrontJournalArticleBySlug(slug);
+      setArticle(found || null);
+    }
+  }, [slug]);
+
+  // If after mounting no article was found (or it is draft/scheduled in future), trigger notFound() (404)
+  if (mounted && article === null) {
+    return notFound();
   }
 
-  const relatedBook = article.relatedBookSlug
-    ? books.find((b) => b.slug === article.relatedBookSlug)
+  // Pre-mount fallback if slug matches initial seed
+  const currentArticle = article || (slug ? getStorefrontJournalArticleBySlug(slug) : undefined);
+  if (mounted && !currentArticle) {
+    return notFound();
+  }
+
+  if (!currentArticle) {
+    return null;
+  }
+
+  const relatedBook = currentArticle.relatedBookSlug
+    ? books.find((b) => b.slug === currentArticle.relatedBookSlug)
     : null;
 
   return (
@@ -46,19 +68,20 @@ export default async function JournalArticlePage({
               color: 'var(--wine)',
             }}
           >
-            {article.category}
+            {currentArticle.category}
           </span>
           <span>·</span>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-            <Calendar size={15} aria-hidden="true" /> {article.date}
+            <Calendar size={15} aria-hidden="true" /> {currentArticle.date}
           </span>
           <span>·</span>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-            <Clock size={15} aria-hidden="true" /> {article.readTime}
+            <Clock size={15} aria-hidden="true" /> {currentArticle.readTime}
           </span>
         </div>
 
         <h1
+          data-testid="journal-article-title"
           style={{
             fontFamily: 'var(--font-serif)',
             fontSize: 'clamp(36px, 6vw, 56px)',
@@ -67,67 +90,89 @@ export default async function JournalArticlePage({
             margin: '0 0 16px',
           }}
         >
-          {article.title}
+          {currentArticle.title}
         </h1>
 
-        <p
-          style={{
-            fontSize: '18px',
-            color: 'var(--muted)',
-            fontStyle: 'italic',
-            lineHeight: 1.5,
-            margin: '0 0 36px',
-            borderBottom: '1px solid var(--line)',
-            paddingBottom: '24px',
-          }}
-        >
-          {article.subtitle}
-        </p>
+        {currentArticle.subtitle && (
+          <p
+            style={{
+              fontSize: '18px',
+              color: 'var(--muted)',
+              fontStyle: 'italic',
+              lineHeight: 1.5,
+              margin: '0 0 36px',
+              borderBottom: '1px solid var(--line)',
+              paddingBottom: '24px',
+            }}
+          >
+            {currentArticle.subtitle}
+          </p>
+        )}
+
+        {currentArticle.coverImage && (
+          <div style={{ margin: '0 0 36px' }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={currentArticle.coverImage}
+              alt={currentArticle.coverImageAlt || currentArticle.title}
+              style={{ width: '100%', maxHeight: '440px', objectFit: 'cover', borderRadius: '4px' }}
+            />
+          </div>
+        )}
 
         {/* Article Body */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', fontSize: '18px', lineHeight: 1.85, color: 'var(--ink)' }}>
-          {article.body.map((para, idx) => {
-            if (idx === 1) {
+        {currentArticle.contentHtml ? (
+          <div
+            data-testid="journal-article-content"
+            className="journal-article-html-body"
+            style={{ fontSize: '18px', lineHeight: 1.85, color: 'var(--ink)', display: 'flex', flexDirection: 'column', gap: '20px' }}
+            dangerouslySetInnerHTML={{ __html: currentArticle.contentHtml }}
+          />
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', fontSize: '18px', lineHeight: 1.85, color: 'var(--ink)' }}>
+            {currentArticle.body.map((para, idx) => {
+              if (idx === 1 && currentArticle.pullQuote) {
+                return (
+                  <div key={idx}>
+                    <p style={{ margin: '0 0 24px' }}>{para}</p>
+                    <blockquote
+                      style={{
+                        margin: '32px 0',
+                        padding: '24px 32px',
+                        borderLeft: '3px solid var(--wine)',
+                        backgroundColor: 'rgba(126, 51, 70, 0.04)',
+                        fontFamily: 'var(--font-serif)',
+                        fontStyle: 'italic',
+                        fontSize: '22px',
+                        lineHeight: 1.5,
+                        color: 'var(--wine)',
+                      }}
+                    >
+                      “{currentArticle.pullQuote}”
+                    </blockquote>
+                  </div>
+                );
+              }
               return (
-                <div key={idx}>
-                  <p style={{ margin: '0 0 24px' }}>{para}</p>
-                  <blockquote
-                    style={{
-                      margin: '32px 0',
-                      padding: '24px 32px',
-                      borderLeft: '3px solid var(--wine)',
-                      backgroundColor: 'rgba(126, 51, 70, 0.04)',
-                      fontFamily: 'var(--font-serif)',
-                      fontStyle: 'italic',
-                      fontSize: '22px',
-                      lineHeight: 1.5,
-                      color: 'var(--wine)',
-                    }}
-                  >
-                    “{article.pullQuote}”
-                  </blockquote>
-                </div>
+                <p
+                  key={idx}
+                  style={{
+                    margin: 0,
+                    ...(idx === 0
+                      ? {
+                          fontSize: '20px',
+                          color: 'var(--ink)',
+                          fontWeight: 400,
+                        }
+                      : {}),
+                  }}
+                >
+                  {para}
+                </p>
               );
-            }
-            return (
-              <p
-                key={idx}
-                style={{
-                  margin: 0,
-                  ...(idx === 0
-                    ? {
-                        fontSize: '20px',
-                        color: 'var(--ink)',
-                        fontWeight: 400,
-                      }
-                    : {}),
-                }}
-              >
-                {para}
-              </p>
-            );
-          })}
-        </div>
+            })}
+          </div>
+        )}
 
         {/* Companion Book Recommendation */}
         {relatedBook && (

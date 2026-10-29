@@ -37,6 +37,24 @@ export async function middleware(request: NextRequest) {
         return NextResponse.rewrite(new URL('/not-found', request.url), { status: 404 });
       }
 
+      const role = verified.role || 'support';
+
+      // RBAC Guards:
+      // 1. /admin/journal: allowed for owner, admin, editor; support & customers get 404
+      if (pathname === '/admin/journal' || pathname.startsWith('/admin/journal/')) {
+        const allowedRoles = ['owner', 'admin', 'editor'];
+        if (!allowedRoles.includes(role)) {
+          return NextResponse.rewrite(new URL('/not-found', request.url), { status: 404 });
+        }
+      }
+
+      // 2. /admin/orders: editor role cannot reach /admin/orders
+      if (pathname === '/admin/orders' || pathname.startsWith('/admin/orders/')) {
+        if (role === 'editor') {
+          return NextResponse.rewrite(new URL('/not-found', request.url), { status: 404 });
+        }
+      }
+
       // Idle Refresh: Reissue signed cookie with refreshed lastActiveAt timestamp
       if (verified.refreshedToken) {
         const response = NextResponse.next();
