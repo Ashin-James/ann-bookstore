@@ -1,9 +1,37 @@
 import { test, expect } from '@playwright/test';
+import fs from 'fs';
+import path from 'path';
+
+// Load .env.local into process.env if not already present in the environment
+if (!process.env.ADMIN_DEMO_EMAIL || !process.env.ADMIN_DEMO_PASSWORD) {
+  try {
+    const envPath = path.resolve('.env.local');
+    if (fs.existsSync(envPath)) {
+      if (typeof process.loadEnvFile === 'function') {
+        process.loadEnvFile(envPath);
+      } else {
+        const lines = fs.readFileSync(envPath, 'utf8').split('\n');
+        for (const line of lines) {
+          const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+          if (match && !process.env[match[1]]) {
+            process.env[match[1]] = match[2]?.trim().replace(/^['"]|['"]$/g, '') || '';
+          }
+        }
+      }
+    }
+  } catch (_) {}
+}
+
+const ENV_EMAIL = process.env.ADMIN_DEMO_EMAIL;
+const ENV_PASSWORD = process.env.ADMIN_DEMO_PASSWORD;
+
+if (!ENV_EMAIL || !ENV_PASSWORD) {
+  throw new Error(
+    'Missing required admin demo credentials: ADMIN_DEMO_EMAIL and ADMIN_DEMO_PASSWORD must be configured in .env.local'
+  );
+}
 
 test.describe('TASK A: Admin Login Credentials, Signed Stateless Sessions & Security Suite', () => {
-  const ENV_EMAIL = process.env.ADMIN_DEMO_EMAIL || 'admin-local@annsbookstore.com';
-  const ENV_PASSWORD = process.env.ADMIN_DEMO_PASSWORD || 'LocalAdminSecret2026!';
-
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
       try {
@@ -205,5 +233,32 @@ test.describe('TASK A: Admin Login Credentials, Signed Stateless Sessions & Secu
     await pwInput.fill('short');
     const isTooShort = await pwInput.evaluate((el: HTMLInputElement) => el.validity.tooShort);
     expect(isTooShort).toBe(true);
+  });
+
+  test('11. Unset or non-matching credentials cannot log in and return generic error (no default built-in credentials)', async ({ page, request }) => {
+    await page.goto('/admin/login');
+
+    // Attempt login with non-matching / default credentials
+    await page.locator('#admin-email').fill('admin@demo.local');
+    await page.locator('#admin-password').fill('AdminPassword123!');
+    await page.locator('button[type="submit"]').click();
+
+    const errorBox = page.locator('[data-testid="admin-login-error"]');
+    await expect(errorBox).toBeVisible();
+    await expect(errorBox).toContainText(/Invalid email or password/i);
+    await expect(page).toHaveURL(/\/admin\/login/);
+
+    // Direct API call confirming rejection
+    const apiRes = await request.post('/api/admin/auth', {
+      data: {
+        action: 'login',
+        email: 'admin@demo.local',
+        password: 'AdminPassword123!',
+      },
+    });
+    expect(apiRes.status()).toBe(401);
+    const json = await apiRes.json();
+    expect(json.success).toBe(false);
+    expect(json.error?.message).toMatch(/Invalid email or password/i);
   });
 });

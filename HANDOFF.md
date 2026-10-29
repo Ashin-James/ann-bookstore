@@ -1,7 +1,7 @@
 # HANDOFF: Ann's Bookstore Demo (feat/admin)
 
 ## Current Status
-- Task A (Admin Login Credentials), Task A2 (Signed Sessions), and Task A3 (Stateless Demo Sessions & Secret Rotation) completed and verified.
+- Task A (Admin Login Credentials), Task A2 (Signed Sessions), Task A3 (Stateless Demo Sessions & Secret Rotation), and Task SEC1 (Remove Hard-coded Credentials) completed and verified.
 
 ## Done
 - Part 0 baseline verification and health API.
@@ -19,6 +19,11 @@
   - Stateless in Demo Mode (`NEXT_PUBLIC_DEMO_MODE=true`): session validity depends purely on HMAC-SHA256 signature and timestamps (30m idle, 12h max), surviving Vercel cold starts and restarts.
   - Automatic idle refresh on admin requests reissues cookie with updated `lastActiveAt` while preserving fixed 12-hour maximum lifetime.
   - Hand-typed cookies, tampered signatures, and expired sessions return 404 on `/admin/*` and 401 on `/api/admin/*`.
+- Task SEC1 Remove Hard-coded Admin Credentials:
+  - Removed all hard-coded fallback credentials from test suites; tests load from `.env.local` via `process.env` and fail fast if missing.
+  - Verified app codebase has no default/fallback credentials for admin login (`ADMIN_DEMO_EMAIL` & `ADMIN_DEMO_PASSWORD` required).
+  - Added e2e test verifying login rejection on non-matching or arbitrary credentials.
+  - Audited git history: commit `0f51a37` contains the historical string.
 
 ## NOT DONE
 - Real-mode session revocation: persistent Supabase `sessions` table is not yet wired up; in demo mode, session invalidation on logout is cookie-deletion only (copied tokens remain valid until expiry).
@@ -27,7 +32,7 @@
 - Lint: `npm run lint`
 - Typecheck: `npx tsc --noEmit`
 - Production Build: `npm run build`
-- Task A e2e against production: `PLAYWRIGHT_TEST_BASE_URL=http://localhost:3005 npx playwright test tests/e2e/task-a-auth.spec.ts`
+- Task A & SEC1 e2e: `npx playwright test tests/e2e/task-a-auth.spec.ts`
 
 ## Exact Next Step
 - Task B: Staff sign-in link (expiring single-use invite links where staff enroll and set their password).
