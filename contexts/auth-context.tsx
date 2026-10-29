@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
+import { setSessionCookie, clearSessionCookie, getSessionUserId } from '@/lib/account/session';
 
 export interface UserAddress {
   id: string;
@@ -28,6 +29,7 @@ export interface User {
   name: string;
   email: string;
   language?: string;
+  isVerified?: boolean;
   addresses: UserAddress[];
   orders: UserOrder[];
 }
@@ -35,11 +37,12 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   isLoggedIn: boolean;
-  login: (email: string, name?: string) => void;
+  login: (email: string, name?: string, isVerified?: boolean, id?: string) => void;
   logout: () => void;
   updateUserName: (name: string) => void;
   updateUserEmail: (email: string) => void;
   updateUserLanguage: (lang: string) => void;
+  setUserVerified: (verified: boolean) => void;
   isAuthModalOpen: boolean;
   openAuthModal: () => void;
   closeAuthModal: () => void;
@@ -51,6 +54,7 @@ const DEMO_USER: User = {
   id: 'usr_demo_01',
   name: 'Eleanor Vance',
   email: 'reader.eleanor@example.com',
+  isVerified: true,
   addresses: [
     {
       id: 'addr_1',
@@ -79,8 +83,6 @@ const DEMO_USER: User = {
   ],
 };
 
-import { setSessionCookie, clearSessionCookie, getSessionUserId } from '@/lib/account/session';
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -104,17 +106,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(DEMO_USER);
         localStorage.setItem('ann-bookstore-user', JSON.stringify(DEMO_USER));
       } else {
-      const isLoginPage = typeof window !== 'undefined' && window.location.pathname === '/login';
-      if (isLoginPage && !sessionCookie) {
-        setUser(null);
-        clearSessionCookie();
-        return;
-      }
+        const isLoginPage =
+          typeof window !== 'undefined' &&
+          (window.location.pathname === '/login' || window.location.pathname === '/register');
+        if (isLoginPage && !sessionCookie) {
+          setUser(null);
+          clearSessionCookie();
+          return;
+        }
 
-      // If neither exists and not signed out, default demo user is signed in for seamless exploration
-      setUser(DEMO_USER);
-      localStorage.setItem('ann-bookstore-user', JSON.stringify(DEMO_USER));
-      setSessionCookie(DEMO_USER.id);
+        // If neither exists and not signed out, default demo user is signed in for seamless exploration
+        setUser(DEMO_USER);
+        localStorage.setItem('ann-bookstore-user', JSON.stringify(DEMO_USER));
+        setSessionCookie(DEMO_USER.id);
       }
     } catch {
       setUser(DEMO_USER);
@@ -122,23 +126,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const login = (email: string, name = 'Reader') => {
+  const login = (email: string, name = 'Reader', isVerified = true, id?: string) => {
     try {
       localStorage.removeItem('ann-bookstore-signed-out');
     } catch {}
 
     const newUser: User = {
       ...DEMO_USER,
+      id: id || `cust_${Date.now()}`,
       email,
       name,
+      isVerified,
     };
     setUser(newUser);
     setSessionCookie(newUser.id);
     try {
       localStorage.setItem('ann-bookstore-user', JSON.stringify(newUser));
-    } catch {
-      // Ignore
-    }
+    } catch {}
     setIsAuthModalOpen(false);
   };
 
@@ -148,9 +152,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       localStorage.removeItem('ann-bookstore-user');
       localStorage.setItem('ann-bookstore-signed-out', 'true');
-    } catch {
-      // Ignore
-    }
+    } catch {}
+    fetch('/api/auth/customer', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'logout' }),
+    }).catch(() => {});
+  };
+
+  const setUserVerified = (verified: boolean) => {
+    setUser((prev) => {
+      if (!prev) return null;
+      const updated = { ...prev, isVerified: verified };
+      try {
+        localStorage.setItem('ann-bookstore-user', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
   };
 
   const updateUserName = (name: string) => {
@@ -181,9 +199,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const updated = { ...prev, language: lang };
       try {
         localStorage.setItem('ann-bookstore-user', JSON.stringify(updated));
-      } catch {
-        // Ignore
-      }
+      } catch {}
       return updated;
     });
   };
@@ -200,6 +216,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       updateUserName,
       updateUserEmail,
       updateUserLanguage,
+      setUserVerified,
       isAuthModalOpen,
       openAuthModal,
       closeAuthModal,

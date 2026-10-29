@@ -9,13 +9,64 @@ import { useAuth } from '@/contexts/auth-context';
 import LanguageSwitcher from '@/components/language-switcher';
 import SearchOverlay from '@/components/search-overlay';
 
+const SIGN_IN_TRANSLATIONS: Record<string, string> = {
+  en: 'Sign in',
+  es: 'Iniciar sesión',
+  fr: 'Connexion',
+  de: 'Anmelden',
+  'pt-BR': 'Entrar',
+  it: 'Accedi',
+  hi: 'साइन इन',
+  ml: 'സൈൻ ഇൻ',
+  ta: 'உள்நுழைக',
+  ar: 'تسجيل الدخول',
+  'zh-Hans': '登录',
+  ja: 'サインイン',
+  ko: '로그인',
+  ru: 'Войти',
+};
+
+const REGISTER_TRANSLATIONS: Record<string, string> = {
+  en: 'Register',
+  es: 'Registrarse',
+  fr: "S'inscrire",
+  de: 'Registrieren',
+  'pt-BR': 'Cadastrar',
+  it: 'Registrati',
+  hi: 'पंजीकरण',
+  ml: 'രജിസ്റ്റർ',
+  ta: 'பதிவுசெய்க',
+  ar: 'إنشاء حساب',
+  'zh-Hans': '注册',
+  ja: '会員登録',
+  ko: '회원가입',
+  ru: 'Регистрация',
+};
+
+const ACCOUNT_TRANSLATIONS: Record<string, string> = {
+  en: 'Account',
+  es: 'Cuenta',
+  fr: 'Compte',
+  de: 'Konto',
+  'pt-BR': 'Conta',
+  it: 'Account',
+  hi: 'खाता',
+  ml: 'അക്കൗണ്ട്',
+  ta: 'கணக்கு',
+  ar: 'الحساب',
+  'zh-Hans': '账户',
+  ja: 'アカウント',
+  ko: '계정',
+  ru: 'Аккаунт',
+};
+
 export default function SiteHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const { cartCount, wishlist, openCart } = useStore();
-  const { t } = useLanguage();
-  const { isLoggedIn, openAuthModal } = useAuth();
+  const { t, language } = useLanguage();
+  const { isLoggedIn } = useAuth();
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 15);
@@ -28,6 +79,10 @@ export default function SiteHeader() {
     [t('navAbout'), '/about'],
     [t('navJournal'), '/journal'],
   ];
+
+  const signInLabel = SIGN_IN_TRANSLATIONS[language] || SIGN_IN_TRANSLATIONS.en;
+  const registerLabel = REGISTER_TRANSLATIONS[language] || REGISTER_TRANSLATIONS.en;
+  const accountLabel = ACCOUNT_TRANSLATIONS[language] || ACCOUNT_TRANSLATIONS.en;
 
   return (
     <>
@@ -88,21 +143,64 @@ export default function SiteHeader() {
             <LanguageSwitcher compact />
           </div>
 
-          {/* Account Link */}
+          {/* Account Auth Links */}
           {isLoggedIn ? (
-            <Link className="icon-link header-account-link" href="/account" aria-label="My Account" style={{ minWidth: '44px', minHeight: '44px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-              <User size={20} />
+            <Link
+              className="icon-link header-account-link"
+              href="/account"
+              aria-label="My Account"
+              style={{
+                minWidth: '44px',
+                minHeight: '44px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '14px',
+                color: 'var(--ink)',
+                textDecoration: 'none',
+                padding: '0 8px',
+              }}
+            >
+              <User size={18} />
+              <span>{accountLabel}</span>
             </Link>
           ) : (
-            <button
-              type="button"
-              onClick={openAuthModal}
-              className="icon-link header-account-link"
-              style={{ border: 0, background: 'transparent', cursor: 'pointer', minWidth: '44px', minHeight: '44px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
-              aria-label="Sign in"
-            >
-              <User size={20} />
-            </button>
+            <div className="header-auth-links" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <Link
+                href="/login"
+                className="header-nav-link header-signin-link"
+                style={{
+                  minHeight: '44px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  fontSize: '14px',
+                  textDecoration: 'none',
+                  color: 'var(--ink)',
+                  padding: '0 8px',
+                }}
+              >
+                {signInLabel}
+              </Link>
+              <span style={{ color: 'var(--line)', opacity: 0.6 }} aria-hidden="true">
+                |
+              </span>
+              <Link
+                href="/register"
+                className="header-nav-link header-register-link"
+                style={{
+                  minHeight: '44px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  fontSize: '14px',
+                  textDecoration: 'none',
+                  color: 'var(--wine)',
+                  fontWeight: 600,
+                  padding: '0 8px',
+                }}
+              >
+                {registerLabel}
+              </Link>
+            </div>
           )}
 
           {/* Wishlist Link */}
@@ -148,9 +246,20 @@ export default function SiteHeader() {
               <ArrowUpRight size={16} />
             </Link>
           ))}
-          <Link onClick={() => setMobileMenuOpen(false)} href="/account">
-            {isLoggedIn ? 'Account & Orders' : 'Sign In'}
-          </Link>
+          {isLoggedIn ? (
+            <Link onClick={() => setMobileMenuOpen(false)} href="/account">
+              {accountLabel} &amp; Orders
+            </Link>
+          ) : (
+            <>
+              <Link onClick={() => setMobileMenuOpen(false)} href="/login">
+                {signInLabel}
+              </Link>
+              <Link onClick={() => setMobileMenuOpen(false)} href="/register">
+                {registerLabel}
+              </Link>
+            </>
+          )}
           <Link onClick={() => setMobileMenuOpen(false)} href="/wishlist">
             Wishlist ({wishlist.length})
           </Link>

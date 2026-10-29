@@ -129,6 +129,11 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (user && user.isVerified === false) {
+      setErrors({ form: 'Please verify your email address before completing checkout.' });
+      return;
+    }
+
     if (!email.trim() || !email.includes('@')) {
       setErrors({ email: 'Please enter a valid email address.' });
       return;
@@ -245,6 +250,28 @@ export default function CheckoutPage() {
 
         <div className="checkout-layout">
           <form className="checkout-form" onSubmit={handleSubmit}>
+            {user && user.isVerified === false && (
+              <div
+                role="alert"
+                style={{
+                  background: 'rgba(114, 38, 56, 0.08)',
+                  border: '1px solid var(--wine)',
+                  color: 'var(--wine)',
+                  padding: '14px 16px',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  marginBottom: '20px',
+                }}
+              >
+                <strong>Email verification required</strong>
+                <p style={{ margin: '4px 0 0' }}>
+                  Please verify your email address to place orders.{' '}
+                  <Link href="/register" style={{ color: 'var(--wine)', textDecoration: 'underline', fontWeight: 600 }}>
+                    Check verification link →
+                  </Link>
+                </p>
+              </div>
+            )}
             {/* Section 1: Contact */}
             <section>
               <h2>01 <span>{t('checkoutContactInfo')}</span></h2>
@@ -460,7 +487,7 @@ export default function CheckoutPage() {
             <button
               className={`button button-dark full-button ${isSubmitting ? 'submitting' : ''}`}
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || user?.isVerified === false}
               aria-busy={isSubmitting}
             >
               <span>{isSubmitting ? t('checkoutProcessing') : `${t('checkoutPlaceOrder')} · ${formatCurrency(total)}`}</span> <span>→</span>

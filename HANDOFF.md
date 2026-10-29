@@ -1,7 +1,7 @@
 # HANDOFF: Ann's Bookstore Demo (feat/admin)
 
 ## Current Status
-- Task A (Admin Login Credentials), Task A2 (Signed Sessions), Task A3 (Stateless Demo Sessions & Secret Rotation), Task SEC1 (Remove Hard-coded Credentials), and Task B (Staff Sign-in Link) completed and verified.
+- Task A (Admin Login Credentials), Task A2 (Signed Sessions), Task A3 (Stateless Demo Sessions & Secret Rotation), Task SEC1 (Remove Hard-coded Credentials), Task B (Staff Sign-in Link), and Task C (Customer Registration & Auth) completed and verified.
 
 ## Done
 - Part 0 baseline verification and health API.
@@ -32,17 +32,28 @@
   - Signed-out and customer users get 404 on protected admin routes (`/admin/books`).
   - Zero layout shift at 390px and 1440px.
   - Screenshots saved to `docs/screenshots/task-b-login.png` and `docs/screenshots/task-b-footer.png`.
+- Task C Customer Registration & Auth:
+  - Registration page (`/register`): name, email, password (min 12 chars), confirm; Zod validation; rate limit; duplicate email generic handling. Demo mode stores hashed passwords (SHA-256 + salt, never plain text); real mode stubs Supabase Auth.
+  - Email verification: demo mode shows verification link on screen and logs it; real mode sends via Resend if `RESEND_API_KEY` is configured. Unverified accounts cannot check out (checkout guard disables submission and displays warning banner).
+  - Auth flows: login, logout, forgot password and reset password (single-use, 1-hour expiry, link displayed on screen in demo mode), change password, delete account with confirmation.
+  - Header: visible "Sign in" and "Register" links when signed out; "Account" when signed in; translated across all 14 shipped languages.
+  - Failed logins: generic error message, 5 failed attempts lock the account for 15 minutes.
+  - Auth isolation: customer session cookie `ann_session` is isolated from admin routes; customer cookies return 404 on `/admin/*`.
+  - Existing `/account` pages preserved and functional (`account-hub.spec.ts` 24/24 passing).
 
 ## NOT DONE
 - Real-mode session revocation: persistent Supabase `sessions` table is not yet wired up; in demo mode, session invalidation on logout is cookie-deletion only (copied tokens remain valid until expiry).
+- Real-mode customer persistence: persistent Supabase Auth customer user tables not wired up in demo mode (in-memory demo store used).
 
 ## How to Run
 - Lint: `npm run lint`
 - Typecheck: `npx tsc --noEmit`
 - Production Build: `npm run build`
+- Task C e2e: `PLAYWRIGHT_TEST_BASE_URL=http://localhost:3005 npx playwright test tests/e2e/task-c-customer-auth.spec.ts`
+- Account Hub e2e: `PLAYWRIGHT_TEST_BASE_URL=http://localhost:3005 npx playwright test tests/e2e/account-hub.spec.ts`
 - Task B e2e: `PLAYWRIGHT_TEST_BASE_URL=http://localhost:3005 npx playwright test tests/e2e/task-b-staff-link.spec.ts`
 - Languages e2e: `PLAYWRIGHT_TEST_BASE_URL=http://localhost:3005 npx playwright test tests/e2e/languages.spec.ts`
 - Task A e2e: `PLAYWRIGHT_TEST_BASE_URL=http://localhost:3005 npx playwright test tests/e2e/task-a-auth.spec.ts`
 
 ## Exact Next Step
-- Task C: Proceed to the next designated milestone in ROADMAP / ADMIN_PROMPT when requested.
+- Task D: Await user request for Task D. Do not start Task D.
