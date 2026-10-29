@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { MapPin } from 'lucide-react';
 import LanguageSwitcher from '@/components/language-switcher';
+import StaffLink from '@/components/staff-link';
 import { useLanguage } from '@/contexts/language-context';
 import { SITE_CONFIG } from '@/src/config/site.config';
 import Container from '@/components/container';
@@ -59,6 +60,12 @@ export default function SiteFooter() {
         <div className="footer-bottom">
           <span>© 2026 Ann’s Bookstore · Handcrafted Author Imprint · Portland, OR</span>
           <span>{t('footerDemoNote')}</span>
+          <StaffLink
+            dataTestId="footer-staff-link"
+            className="footer-staff-link"
+            style={{ color: '#9c8e7e', marginRight: '64px' }}
+            hoverColor="#fff"
+          />
         </div>
       </Container>
     </footer>

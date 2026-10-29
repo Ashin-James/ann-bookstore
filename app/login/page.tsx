@@ -7,6 +7,7 @@ import { useLanguage } from '@/contexts/language-context';
 import Container from '@/components/container';
 import Section from '@/components/section';
 import { ArrowRight, UserCheck, Shield, CheckCircle } from 'lucide-react';
+import StaffLink from '@/components/staff-link';
 
 function LoginForm() {
   const { user, login } = useAuth();
@@ -379,6 +380,24 @@ function LoginForm() {
           >
             <Shield size={16} aria-hidden="true" />
             <span>Customer reader accounts are isolated from administration.</span>
+          </div>
+
+          <div
+            style={{
+              marginTop: '16px',
+              paddingTop: '12px',
+              borderTop: '1px dashed var(--line)',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
+            <StaffLink
+              dataTestId="login-staff-link"
+              className="login-staff-link"
+              style={{ color: 'var(--muted)' }}
+              hoverColor="var(--wine)"
+            />
           </div>
         </div>
       </Container>

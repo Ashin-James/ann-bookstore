@@ -1,7 +1,7 @@
 # HANDOFF: Ann's Bookstore Demo (feat/admin)
 
 ## Current Status
-- Task A (Admin Login Credentials), Task A2 (Signed Sessions), Task A3 (Stateless Demo Sessions & Secret Rotation), and Task SEC1 (Remove Hard-coded Credentials) completed and verified.
+- Task A (Admin Login Credentials), Task A2 (Signed Sessions), Task A3 (Stateless Demo Sessions & Secret Rotation), Task SEC1 (Remove Hard-coded Credentials), and Task B (Staff Sign-in Link) completed and verified.
 
 ## Done
 - Part 0 baseline verification and health API.
@@ -24,6 +24,14 @@
   - Verified app codebase has no default/fallback credentials for admin login (`ADMIN_DEMO_EMAIL` & `ADMIN_DEMO_PASSWORD` required).
   - Added e2e test verifying login rejection on non-matching or arbitrary credentials.
   - Audited git history: commit `0f51a37` contains the historical string.
+- Task B Staff Sign-in Link:
+  - Added "Staff sign in" text link (14px minimum, 44px touch target) at bottom of `/login` and in site footer (`components/site-footer.tsx`), pointing to `/admin/login`. Not added to main header.
+  - Translated into every shipped language (14 languages: en, es, fr, de, pt-BR, it, hi, ml, ta, ar, zh-Hans, ja, ko, ru).
+  - Server-side check `checkAdminSession()` (`actions/admin-session.ts`) returns boolean using `verifySignedSessionToken` from `lib/admin/session.ts`.
+  - When valid admin session exists, dynamically renders "Admin dashboard" linking to `/admin/dashboard`.
+  - Signed-out and customer users get 404 on protected admin routes (`/admin/books`).
+  - Zero layout shift at 390px and 1440px.
+  - Screenshots saved to `docs/screenshots/task-b-login.png` and `docs/screenshots/task-b-footer.png`.
 
 ## NOT DONE
 - Real-mode session revocation: persistent Supabase `sessions` table is not yet wired up; in demo mode, session invalidation on logout is cookie-deletion only (copied tokens remain valid until expiry).
@@ -32,7 +40,9 @@
 - Lint: `npm run lint`
 - Typecheck: `npx tsc --noEmit`
 - Production Build: `npm run build`
-- Task A & SEC1 e2e: `npx playwright test tests/e2e/task-a-auth.spec.ts`
+- Task B e2e: `PLAYWRIGHT_TEST_BASE_URL=http://localhost:3005 npx playwright test tests/e2e/task-b-staff-link.spec.ts`
+- Languages e2e: `PLAYWRIGHT_TEST_BASE_URL=http://localhost:3005 npx playwright test tests/e2e/languages.spec.ts`
+- Task A e2e: `PLAYWRIGHT_TEST_BASE_URL=http://localhost:3005 npx playwright test tests/e2e/task-a-auth.spec.ts`
 
 ## Exact Next Step
-- Task B: Staff sign-in link (expiring single-use invite links where staff enroll and set their password).
+- Task C: Proceed to the next designated milestone in ROADMAP / ADMIN_PROMPT when requested.
