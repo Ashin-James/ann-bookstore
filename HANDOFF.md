@@ -1,7 +1,8 @@
 # HANDOFF: Ann's Bookstore Demo (feat/admin)
 
 ## Current Status
-- Task A (Admin Login Credentials), Task A2 (Signed Sessions), Task A3 (Stateless Demo Sessions & Secret Rotation), Task SEC1 (Remove Hard-coded Credentials), Task B (Staff Sign-in Link), Task C (Customer Registration & Auth), Task G (Journal Editor), Task H (Thoughts and About Page), Task I (Newsletter Signup Flow), and Task SB-1 (Supabase Foundation + Books) completed.
+- Demo Day QA Pass completed: full crawl and core flows verified across public and admin routes at 390px and 1440px. All test suites pass.
+- Task A, A2, A3, SEC1, B, C, G, H, I, and SB-1 complete and verified.
 
 ## Supabase Real-Mode Activation Instructions
 To connect this project to Supabase:
@@ -88,6 +89,13 @@ To connect this project to Supabase:
   - Added idempotent seed command `npm run seed:supabase`.
   - Admin `/admin/books` persists mutations to Supabase when `DATA_BACKEND=supabase` while leaving existing demo in-browser flow functional.
   - Multi-context test in `tests/e2e/task1-books.spec.ts` skips cleanly when Supabase credentials are absent and executes full verification when present.
+- Demo Day QA Pass:
+  - Form input hydration guards added to admin login, customer login, and registration.
+  - Hard navigation on admin login/logout ensures session cookies are reliably applied/revoked.
+  - Suppressed cookie banner on `/admin/*` routes to prevent obstructing sidebar and logout controls.
+  - Route crawl at 390px and 1440px confirmed zero broken links, no clipped text, and valid HTTP status across all public and admin pages.
+  - Core flows verified: storefront commerce, customer authentication, newsletter double opt-in/unsubscribe, and admin consoles.
+  - Production build clean: 52/52 routes statically/dynamically optimized.
 
 ## NOT DONE
 - Real-mode session revocation: persistent Supabase `sessions` table is not yet wired up; in demo mode, session invalidation on logout is cookie-deletion only (copied tokens remain valid until expiry).
