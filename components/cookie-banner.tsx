@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Cookie, X } from 'lucide-react';
 
 export default function CookieBanner() {
+  const pathname = usePathname();
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -27,7 +29,7 @@ export default function CookieBanner() {
     }
   };
 
-  if (!show) return null;
+  if (!show || pathname?.startsWith('/admin')) return null;
 
   return (
     <aside

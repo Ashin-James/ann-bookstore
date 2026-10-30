@@ -97,6 +97,8 @@ function RegisterForm() {
   const [demoVerificationLink, setDemoVerificationLink] = useState('');
   const [isVerifiedNotice, setIsVerifiedNotice] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const verifyToken = searchParams.get('verifyToken');
 
@@ -351,6 +353,7 @@ function RegisterForm() {
                   id="register-name"
                   type="text"
                   required
+                  disabled={!mounted || isPending}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Eleanor Vance"
@@ -384,6 +387,7 @@ function RegisterForm() {
                   id="register-email"
                   type="email"
                   required
+                  disabled={!mounted || isPending}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="reader@example.com"
@@ -417,6 +421,7 @@ function RegisterForm() {
                   id="register-password"
                   type="password"
                   required
+                  disabled={!mounted || isPending}
                   minLength={12}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -451,6 +456,7 @@ function RegisterForm() {
                   id="register-confirm-password"
                   type="password"
                   required
+                  disabled={!mounted || isPending}
                   minLength={12}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
@@ -470,7 +476,7 @@ function RegisterForm() {
 
               <button
                 type="submit"
-                disabled={isPending}
+                disabled={!mounted || isPending}
                 style={{
                   width: '100%',
                   minHeight: '44px',

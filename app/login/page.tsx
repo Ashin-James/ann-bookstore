@@ -31,6 +31,8 @@ function LoginForm() {
   const [successMsg, setSuccessMsg] = useState('');
   const [demoResetLink, setDemoResetLink] = useState('');
   const [isPending, startTransition] = useTransition();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     if (resetTokenParam) {
@@ -431,6 +433,7 @@ function LoginForm() {
                     id="customer-login-email"
                     type="email"
                     required
+                    disabled={!mounted || isPending}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="reader.eleanor@example.com"
@@ -490,6 +493,7 @@ function LoginForm() {
                       id="customer-login-password"
                       type="password"
                       required
+                      disabled={!mounted || isPending}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••••••"
@@ -511,7 +515,7 @@ function LoginForm() {
 
             <button
               type="submit"
-              disabled={isPending}
+              disabled={!mounted || isPending}
               style={{
                 width: '100%',
                 minHeight: '44px',

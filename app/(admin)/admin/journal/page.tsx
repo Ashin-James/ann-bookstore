@@ -598,6 +598,8 @@ export default function AdminJournalPage() {
 
   const [posts, setPosts] = useState<JournalPostRecord[]>([]);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const [searchQuery, setSearchQuery] = useState('');
 
   // Mode: 'list' | 'editor'
@@ -856,6 +858,7 @@ export default function AdminJournalPage() {
           <button
             type="button"
             data-testid="btn-create-post"
+            disabled={!mounted}
             onClick={handleOpenNew}
             style={{
               display: 'inline-flex',

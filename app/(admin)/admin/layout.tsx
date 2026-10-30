@@ -107,7 +107,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         body: JSON.stringify({ action: 'logout' }),
       });
     } finally {
-      router.push('/admin/login');
+      window.location.href = '/admin/login';
     }
   };
 

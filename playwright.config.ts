@@ -10,7 +10,7 @@ export default defineConfig({
   workers: 1,
   reporter: [['list']],
   use: {
-    baseURL: process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3001',
+    baseURL: process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000',
     trace: 'off',
     video: 'off',
     screenshot: 'off',
@@ -24,9 +24,9 @@ export default defineConfig({
       },
     },
   ],
-  webServer: {
-    command: 'npx next start -p 3001',
-    port: 3001,
+  webServer: process.env.PLAYWRIGHT_TEST_BASE_URL ? undefined : {
+    command: 'npx next dev -p 3000',
+    port: 3000,
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
   },

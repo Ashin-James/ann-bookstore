@@ -1,11 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { Lock, Mail, Shield, KeyRound, AlertCircle, Sparkles } from 'lucide-react';
 
 export default function AdminLoginPage() {
-  const router = useRouter();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,9 +15,9 @@ export default function AdminLoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showDemoUnsetNote, setShowDemoUnsetNote] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    async function checkConfig() {
+  useEffect(() => {    setMounted(true);    async function checkConfig() {
       try {
         const res = await fetch('/api/admin/auth?action=config');
         const json = await res.json();
@@ -61,7 +59,7 @@ export default function AdminLoginPage() {
         }
 
         // Successfully authenticated!
-        router.push('/admin/dashboard');
+        window.location.href = '/admin/dashboard';
       } else {
         // Step TOTP or Recovery Code
         const payload = useRecoveryCode
@@ -81,7 +79,7 @@ export default function AdminLoginPage() {
           return;
         }
 
-        router.push('/admin/dashboard');
+        window.location.href = '/admin/dashboard';
       }
     } catch {
       setError('An error occurred during authentication. Please retry.');
@@ -207,6 +205,7 @@ export default function AdminLoginPage() {
                     id="admin-email"
                     type="email"
                     required
+                    disabled={!mounted}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@annsbookstore.com"
@@ -236,6 +235,7 @@ export default function AdminLoginPage() {
                     id="admin-password"
                     type="password"
                     required
+                    disabled={!mounted}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••••••"
@@ -341,7 +341,7 @@ export default function AdminLoginPage() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={!mounted || loading}
             style={{
               minHeight: '44px',
               padding: '12px',

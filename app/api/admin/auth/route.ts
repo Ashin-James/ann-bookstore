@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
         await service.logout(sessionToken);
       }
       const response = NextResponse.json({ success: true });
-      response.cookies.delete('ann_admin_session');
+      response.cookies.set('ann_admin_session', '', { path: '/', maxAge: 0, httpOnly: true });
       return response;
     }
 
@@ -199,7 +199,7 @@ export async function GET(request: NextRequest) {
   const verified = await verifySignedSessionToken(token);
   if (!verified.valid || !verified.sessionId) {
     const response = NextResponse.json({ success: false, error: 'Unauthorized: Invalid or expired session' }, { status: 401 });
-    response.cookies.delete('ann_admin_session');
+    response.cookies.set('ann_admin_session', '', { path: '/', maxAge: 0, httpOnly: true });
     return response;
   }
 
