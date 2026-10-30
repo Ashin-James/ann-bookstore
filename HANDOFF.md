@@ -1,7 +1,7 @@
 # HANDOFF: Ann's Bookstore Demo (feat/admin)
 
 ## Current Status
-- Task A (Admin Login Credentials), Task A2 (Signed Sessions), Task A3 (Stateless Demo Sessions & Secret Rotation), Task SEC1 (Remove Hard-coded Credentials), Task B (Staff Sign-in Link), Task C (Customer Registration & Auth), Task G (Journal Editor), and Task H (Thoughts and About Page) completed and verified.
+- Task A (Admin Login Credentials), Task A2 (Signed Sessions), Task A3 (Stateless Demo Sessions & Secret Rotation), Task SEC1 (Remove Hard-coded Credentials), Task B (Staff Sign-in Link), Task C (Customer Registration & Auth), Task G (Journal Editor), Task H (Thoughts and About Page), and Task I (Newsletter Signup Flow) completed and verified.
 
 ## Done
 - Part 0 baseline verification and health API.
@@ -60,17 +60,30 @@
   - AdminService integration: Thoughts and About operations route through `AdminService` (`DemoAdminService`) with immutable `audit_log` rows (`thoughts.create`, `thoughts.update`, `thoughts.reorder`, `thoughts.delete`, `about.update`, `about.restore_revision`).
   - Translations in all 14 shipped languages (en, es, fr, de, pt-BR, it, hi, ml, ta, ar, zh-Hans, ja, ko, ru).
   - Additive Supabase migration in `supabase/migrations/20261031000000_thoughts_about.sql` (BUILT-NOT-VERIFIED).
+- Task I Newsletter Signup Flow:
+  - Wired public homepage form (`#newsletter-email`, "Join Atelier") without changing its visual appearance or layout.
+  - Zod email validation (`z.string().email()`), rate limit per IP hash (10 requests / 15m), friendly duplicate handling without revealing whether email exists, subscriber stored as `pending`.
+  - Double opt-in: Single-use verification token (expires in 48 hours, stored hashed with SHA-256). In demo mode, verification link displayed on screen and logged; in real mode sends via Resend if `RESEND_API_KEY` is present.
+  - Confirmation page (`/newsletter/confirm?token=...`) marks subscriber `confirmed` and provides unsubscribe link. Single-use token invalidation and expiration enforced.
+  - Unsubscribe page (`/newsletter/unsubscribe?token=...`) reachable from signed link (token-based, no login), marks subscriber `unsubscribed`, and provides resubscribe flow that requires double opt-in verification again.
+  - Source tracking (`"home footer"` or page path) and timestamps (`createdAt`, `updatedAt`, `confirmedAt`, `unsubscribedAt`).
+  - AdminService integration (`DemoAdminService`) with immutable `audit_log` rows (`newsletter.subscribe`, `newsletter.confirm`, `newsletter.unsubscribe`, `newsletter.resubscribe`) with emails masked. Demo store note: per-browser only.
+  - Additive Supabase migration in `supabase/migrations/20261031000001_newsletter.sql` (BUILT-NOT-VERIFIED).
+  - All strings translated across all 14 shipped languages. Privacy link (`/privacy`) preserved. No subscriber email in logs or URLs.
+  - E2E tests in `tests/e2e/task-i-newsletter.spec.ts` (6/6 passing).
 
 ## NOT DONE
 - Real-mode session revocation: persistent Supabase `sessions` table is not yet wired up; in demo mode, session invalidation on logout is cookie-deletion only (copied tokens remain valid until expiry).
 - Real-mode customer persistence: persistent Supabase Auth customer user tables not wired up in demo mode (in-memory demo store used).
 - Real-mode Supabase journal persistence live verification: `supabase/migrations/20261030000000_journal.sql` and service methods are implemented but marked BUILT-NOT-VERIFIED due to absent live Supabase credentials.
 - Real-mode Supabase thoughts & about persistence live verification: `supabase/migrations/20261031000000_thoughts_about.sql` is implemented but marked BUILT-NOT-VERIFIED due to absent live Supabase credentials.
+- Real-mode Supabase newsletter persistence live verification: `supabase/migrations/20261031000001_newsletter.sql` is implemented but marked BUILT-NOT-VERIFIED due to absent live Supabase credentials.
 
 ## How to Run
 - Lint: `npm run lint`
 - Typecheck: `npx tsc --noEmit`
 - Production Build: `npm run build`
+- Task I e2e: `PLAYWRIGHT_TEST_BASE_URL=http://localhost:3005 npx playwright test tests/e2e/task-i-newsletter.spec.ts`
 - Task H e2e: `PLAYWRIGHT_TEST_BASE_URL=http://localhost:3005 npx playwright test tests/e2e/task-h-thoughts-about.spec.ts`
 - Task G e2e: `PLAYWRIGHT_TEST_BASE_URL=http://localhost:3005 npx playwright test tests/e2e/task-g-journal.spec.ts`
 - Task C e2e: `PLAYWRIGHT_TEST_BASE_URL=http://localhost:3005 npx playwright test tests/e2e/task-c-customer-auth.spec.ts`
@@ -80,4 +93,4 @@
 - Task A e2e: `PLAYWRIGHT_TEST_BASE_URL=http://localhost:3005 npx playwright test tests/e2e/task-a-auth.spec.ts`
 
 ## Exact Next Step
-- Task I: Await user request for Task I. Do not start Task I.
+- Task J: Await user request for Task J. Do not start Task J.
