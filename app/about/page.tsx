@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowUpRight, Feather, Heart, BookOpen, Compass } from 'lucide-react';
 import Container from '@/components/container';
@@ -7,6 +8,45 @@ import Section from '@/components/section';
 import Reveal from '@/components/reveal';
 
 export default function AboutPage() {
+  const [aboutData, setAboutData] = useState<{
+    title?: string;
+    subtitle?: string;
+    contentHtml?: string;
+    status?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    function syncAbout() {
+      if (typeof window === 'undefined') return;
+      try {
+        const raw = window.localStorage.getItem('ann_admin_v1_store');
+        if (raw) {
+          const store = JSON.parse(raw);
+          if (store.aboutPage && store.aboutPage.status === 'published') {
+            setAboutData({
+              title: store.aboutPage.title,
+              subtitle: store.aboutPage.subtitle,
+              contentHtml: store.aboutPage.contentHtml,
+              status: store.aboutPage.status,
+            });
+            return;
+          }
+        }
+      } catch {
+        // Fall back to default
+      }
+      setAboutData(null);
+    }
+
+    syncAbout();
+    window.addEventListener('ann_about_updated', syncAbout);
+    window.addEventListener('storage', syncAbout);
+    return () => {
+      window.removeEventListener('ann_about_updated', syncAbout);
+      window.removeEventListener('storage', syncAbout);
+    };
+  }, []);
+
   return (
     <Section className="about-page-section">
       <Container style={{ maxWidth: '920px' }}>
@@ -15,6 +55,7 @@ export default function AboutPage() {
           <header className="page-intro">
             <span className="eyebrow">ABOUT THE AUTHOR</span>
             <h1
+              data-testid="about-page-title"
               style={{
                 fontFamily: 'var(--font-serif)',
                 fontSize: 'clamp(44px, 7vw, 76px)',
@@ -22,11 +63,18 @@ export default function AboutPage() {
                 lineHeight: 1.1,
               }}
             >
-              Stories begin<br />
-              with <em>noticing.</em>
+              {aboutData?.title || (
+                <>
+                  Stories begin<br />
+                  with <em>noticing.</em>
+                </>
+              )}
             </h1>
-            <p style={{ maxWidth: '580px', margin: '0 auto', color: 'var(--muted)', fontSize: '18px', fontStyle: 'italic' }}>
-              “The rain did not begin with thunder; it arrived as a rumor on the veranda wind.”
+            <p
+              data-testid="about-page-subtitle"
+              style={{ maxWidth: '580px', margin: '0 auto', color: 'var(--muted)', fontSize: '18px', fontStyle: 'italic' }}
+            >
+              {aboutData?.subtitle || '“The rain did not begin with thunder; it arrived as a rumor on the veranda wind.”'}
             </p>
           </header>
         </Reveal>
@@ -50,17 +98,30 @@ export default function AboutPage() {
 
         {/* Core Biography and Philosophy */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '28px', fontSize: '17px', lineHeight: 1.8, color: 'var(--ink)' }}>
-          <Reveal variant="fadeUp" delay={0.2}>
-            <p style={{ fontSize: '21px', lineHeight: 1.6, color: 'var(--ink)', fontWeight: 400 }}>
-              Ann is an author writing from the rain-swept coast of southern India. Her work examines themes of ancestral homes, silent devotion, coastal folklore, and the delicate trade-offs between communal duty and personal truth.
-            </p>
-          </Reveal>
+          {aboutData?.contentHtml ? (
+            <Reveal variant="fadeUp" delay={0.2}>
+              <div
+                data-testid="about-page-content"
+                className="about-published-body"
+                style={{ fontSize: '18px', lineHeight: 1.8, color: 'var(--ink)' }}
+                dangerouslySetInnerHTML={{ __html: aboutData.contentHtml }}
+              />
+            </Reveal>
+          ) : (
+            <>
+              <Reveal variant="fadeUp" delay={0.2}>
+                <p data-testid="about-page-content" style={{ fontSize: '21px', lineHeight: 1.6, color: 'var(--ink)', fontWeight: 400 }}>
+                  Ann is an author writing from the rain-swept coast of southern India. Her work examines themes of ancestral homes, silent devotion, coastal folklore, and the delicate trade-offs between communal duty and personal truth.
+                </p>
+              </Reveal>
 
-          <Reveal variant="fadeUp" delay={0.25}>
-            <p style={{ color: 'var(--muted)' }}>
-              Her debut novel, <em>The Quiet Hours</em>, was awarded literary recognition for its atmospheric portrayal of domestic solitude during the south-west monsoon. Composed over three rainy months, it asks how families hold onto love when time and circumstance demand silence.
-            </p>
-          </Reveal>
+              <Reveal variant="fadeUp" delay={0.25}>
+                <p style={{ color: 'var(--muted)' }}>
+                  Her debut novel, <em>The Quiet Hours</em>, was awarded literary recognition for its atmospheric portrayal of domestic solitude during the south-west monsoon. Composed over three rainy months, it asks how families hold onto love when time and circumstance demand silence.
+                </p>
+              </Reveal>
+            </>
+          )}
 
           {/* Pillars of Craft Grid */}
           <div className="about-pillars-grid">

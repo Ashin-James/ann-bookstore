@@ -1,4 +1,4 @@
-import { AdminService } from './admin-service';
+import { AdminService, ThoughtRecord, AboutPageRecord, AboutRevisionRecord } from './admin-service';
 import {
   AdminRole,
   AdminSession,
@@ -48,6 +48,54 @@ import { z } from 'zod';
 
 const STORAGE_PREFIX = 'ann_admin_v1_';
 
+export function createInitialDemoThoughts(): ThoughtRecord[] {
+  return [
+    {
+      id: 'thought-seed-1',
+      content: 'Words, like rainfall, find their own level if given enough quiet. Composed unhurriedly on acid-free archival paper.',
+      attribution: 'Ann · From The Quiet Hours',
+      status: 'published',
+      order: 0,
+      createdAt: '2026-10-01T10:00:00.000Z',
+      updatedAt: '2026-10-01T10:00:00.000Z',
+    },
+    {
+      id: 'thought-seed-2',
+      content: 'Somewhere between the rain and the remembering, we find our way home.',
+      attribution: 'Ann · From The Quiet Hours · First Edition',
+      status: 'published',
+      order: 1,
+      createdAt: '2026-10-05T14:30:00.000Z',
+      updatedAt: '2026-10-05T14:30:00.000Z',
+    },
+  ];
+}
+
+export function createInitialDemoAboutPage(): AboutPageRecord {
+  return {
+    id: 'about',
+    title: 'Stories begin with noticing.',
+    subtitle: '“The rain did not begin with thunder; it arrived as a rumor on the veranda wind.”',
+    contentHtml: `<p>Ann is an author writing from the rain-swept coast of southern India. Her work examines themes of ancestral homes, silent devotion, coastal folklore, and the delicate trade-offs between communal duty and personal truth.</p><p>Her debut novel, <em>The Quiet Hours</em>, was awarded literary recognition for its atmospheric portrayal of domestic solitude during the south-west monsoon. Composed over three rainy months, it asks how families hold onto love when time and circumstance demand silence.</p>`,
+    status: 'published',
+    needsLegalReview: false,
+    revisions: [
+      {
+        id: 'rev-about-1',
+        revisionNumber: 1,
+        title: 'Stories begin with noticing.',
+        subtitle: '“The rain did not begin with thunder; it arrived as a rumor on the veranda wind.”',
+        contentHtml: `<p>Ann is an author writing from the rain-swept coast of southern India. Her work examines themes of ancestral homes, silent devotion, coastal folklore, and the delicate trade-offs between communal duty and personal truth.</p><p>Her debut novel, <em>The Quiet Hours</em>, was awarded literary recognition for its atmospheric portrayal of domestic solitude during the south-west monsoon. Composed over three rainy months, it asks how families hold onto love when time and circumstance demand silence.</p>`,
+        status: 'published',
+        needsLegalReview: false,
+        createdAt: '2026-10-01T10:00:00.000Z',
+        createdBy: 'editor@annsbookstore.demo',
+      },
+    ],
+    updatedAt: '2026-10-01T10:00:00.000Z',
+  };
+}
+
 interface DemoDataStore {
   staff: AdminUser[];
   sessions: AdminSession[];
@@ -59,6 +107,8 @@ interface DemoDataStore {
   reviews: ReviewRecord[];
   subscribers: SubscriberRecord[];
   journalPosts?: JournalPostRecord[];
+  thoughts?: ThoughtRecord[];
+  aboutPage?: AboutPageRecord;
   setupCompleted: boolean;
   passwords?: Record<string, string>;
 }
@@ -78,6 +128,12 @@ export class DemoAdminService implements AdminService {
           const parsed = JSON.parse(raw);
           if (!Array.isArray(parsed.journalPosts)) {
             parsed.journalPosts = createInitialDemoJournalPosts();
+          }
+          if (!Array.isArray(parsed.thoughts)) {
+            parsed.thoughts = createInitialDemoThoughts();
+          }
+          if (!parsed.aboutPage) {
+            parsed.aboutPage = createInitialDemoAboutPage();
           }
           return parsed;
         }
@@ -141,6 +197,8 @@ export class DemoAdminService implements AdminService {
       reviews: seedReviews,
       subscribers: seedSubscribers,
       journalPosts: createInitialDemoJournalPosts(),
+      thoughts: createInitialDemoThoughts(),
+      aboutPage: createInitialDemoAboutPage(),
       setupCompleted: false,
       passwords: {},
     };
@@ -1468,6 +1526,417 @@ export class DemoAdminService implements AdminService {
       return { success: false, error: { code: 'INVALID_INPUT', message: res.error } };
     }
     return { success: true, data: res.post };
+  }
+
+  // Thoughts Management
+  listThoughtsSync(filter?: { status?: 'all' | 'published' }): ThoughtRecord[] {
+    if (!Array.isArray(this.store.thoughts)) {
+      this.store.thoughts = createInitialDemoThoughts();
+    }
+    let list = [...this.store.thoughts];
+    if (filter?.status && filter.status !== 'all') {
+      list = list.filter((t) => t.status === filter.status);
+    }
+    return list.sort((a, b) => a.order - b.order);
+  }
+
+  async listThoughts(filter?: { status?: 'all' | 'published' }): Promise<Result<ThoughtRecord[]>> {
+    return { success: true, data: this.listThoughtsSync(filter) };
+  }
+
+  saveThoughtSync(params: {
+    thought: {
+      id?: string;
+      content: string;
+      attribution?: string;
+      status: 'draft' | 'published';
+    };
+    actorEmail: string;
+    ipHash?: string;
+  }): { success: true; thought: ThoughtRecord } | { success: false; error: string } {
+    const { thought: input, actorEmail, ipHash = 'demo_localhost' } = params;
+    const thoughtSchema = z.object({
+      id: z.string().optional(),
+      content: z.string().min(1, 'Thought content is required').max(1000, 'Content must be under 1000 characters'),
+      attribution: z.string().max(200, 'Attribution must be under 200 characters').optional(),
+      status: z.enum(['draft', 'published']),
+    });
+
+    const parsed = thoughtSchema.safeParse(input);
+    if (!parsed.success) {
+      return { success: false, error: parsed.error.issues[0]?.message || 'Invalid thought data' };
+    }
+
+    if (!Array.isArray(this.store.thoughts)) {
+      this.store.thoughts = createInitialDemoThoughts();
+    }
+
+    const sanitizedContent = sanitizeHtmlContent(parsed.data.content).trim();
+    if (!sanitizedContent) {
+      return { success: false, error: 'Thought content is required' };
+    }
+    const sanitizedAttribution = parsed.data.attribution ? sanitizeHtmlContent(parsed.data.attribution).trim() : undefined;
+
+    const nowIso = new Date().toISOString();
+    const isNew = !parsed.data.id || !this.store.thoughts.some((t) => t.id === parsed.data.id);
+
+    let savedRecord: ThoughtRecord;
+    if (isNew) {
+      const maxOrder = this.store.thoughts.reduce((max, t) => Math.max(max, t.order), -1);
+      savedRecord = {
+        id: parsed.data.id || `thought_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        content: sanitizedContent,
+        attribution: sanitizedAttribution,
+        status: parsed.data.status,
+        order: maxOrder + 1,
+        createdAt: nowIso,
+        updatedAt: nowIso,
+      };
+      this.store.thoughts.push(savedRecord);
+      this.addAudit({
+        actorEmail,
+        action: 'thoughts.create',
+        entity: 'thought',
+        entityId: savedRecord.id,
+        before: null,
+        after: { content: savedRecord.content, status: savedRecord.status, attribution: savedRecord.attribution },
+        ipHash,
+      });
+    } else {
+      const idx = this.store.thoughts.findIndex((t) => t.id === parsed.data.id);
+      const existing = this.store.thoughts[idx];
+      savedRecord = {
+        ...existing,
+        content: sanitizedContent,
+        attribution: sanitizedAttribution,
+        status: parsed.data.status,
+        updatedAt: nowIso,
+      };
+      this.store.thoughts[idx] = savedRecord;
+      this.addAudit({
+        actorEmail,
+        action: 'thoughts.update',
+        entity: 'thought',
+        entityId: savedRecord.id,
+        before: { content: existing.content, status: existing.status },
+        after: { content: savedRecord.content, status: savedRecord.status },
+        ipHash,
+      });
+    }
+
+    this.persistStore();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('ann_thoughts_updated'));
+    }
+    return { success: true, thought: savedRecord };
+  }
+
+  async saveThought(params: {
+    thought: {
+      id?: string;
+      content: string;
+      attribution?: string;
+      status: 'draft' | 'published';
+    };
+    actorEmail: string;
+    ipHash?: string;
+  }): Promise<Result<ThoughtRecord>> {
+    const res = this.saveThoughtSync(params);
+    if (!res.success) {
+      return { success: false, error: { code: 'INVALID_INPUT', message: res.error } };
+    }
+    return { success: true, data: res.thought };
+  }
+
+  reorderThoughtsSync(params: {
+    orderedIds: string[];
+    actorEmail: string;
+    ipHash?: string;
+  }): { success: true; thoughts: ThoughtRecord[] } | { success: false; error: string } {
+    const { orderedIds, actorEmail, ipHash = 'demo_localhost' } = params;
+    if (!Array.isArray(this.store.thoughts)) {
+      this.store.thoughts = createInitialDemoThoughts();
+    }
+
+    const before = this.store.thoughts.map((t) => ({ id: t.id, order: t.order }));
+
+    // Re-index according to orderedIds
+    orderedIds.forEach((id, index) => {
+      const item = this.store.thoughts!.find((t) => t.id === id);
+      if (item) {
+        item.order = index;
+        item.updatedAt = new Date().toISOString();
+      }
+    });
+
+    this.store.thoughts.sort((a, b) => a.order - b.order);
+
+    this.addAudit({
+      actorEmail,
+      action: 'thoughts.reorder',
+      entity: 'thought',
+      entityId: 'all',
+      before: { order: before },
+      after: { order: this.store.thoughts.map((t) => ({ id: t.id, order: t.order })) },
+      ipHash,
+    });
+
+    this.persistStore();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('ann_thoughts_updated'));
+    }
+    return { success: true, thoughts: [...this.store.thoughts] };
+  }
+
+  async reorderThoughts(params: {
+    orderedIds: string[];
+    actorEmail: string;
+    ipHash?: string;
+  }): Promise<Result<ThoughtRecord[]>> {
+    const res = this.reorderThoughtsSync(params);
+    if (!res.success) {
+      return { success: false, error: { code: 'INVALID_INPUT', message: res.error } };
+    }
+    return { success: true, data: res.thoughts };
+  }
+
+  deleteThoughtSync(params: {
+    id: string;
+    confirmation: string;
+    actorEmail: string;
+    ipHash?: string;
+  }): { success: true } | { success: false; error: string } {
+    const { id, confirmation, actorEmail, ipHash = 'demo_localhost' } = params;
+    if (!Array.isArray(this.store.thoughts)) {
+      this.store.thoughts = createInitialDemoThoughts();
+    }
+
+    const idx = this.store.thoughts.findIndex((t) => t.id === id);
+    if (idx === -1) {
+      return { success: false, error: 'Thought not found' };
+    }
+
+    const target = this.store.thoughts[idx];
+    const normalizedConfirm = confirmation.trim().toLowerCase();
+    const matchesSnippet =
+      target.content.trim().toLowerCase().startsWith(normalizedConfirm) ||
+      target.content.trim().toLowerCase().includes(normalizedConfirm);
+    if (normalizedConfirm !== 'delete' && !matchesSnippet) {
+      return { success: false, error: 'Confirmation does not match' };
+    }
+
+    const beforeState = { id: target.id, content: target.content, status: target.status };
+    this.store.thoughts.splice(idx, 1);
+
+    this.addAudit({
+      actorEmail,
+      action: 'thoughts.delete',
+      entity: 'thought',
+      entityId: id,
+      before: beforeState,
+      after: null,
+      ipHash,
+    });
+
+    this.persistStore();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('ann_thoughts_updated'));
+    }
+    return { success: true };
+  }
+
+  async deleteThought(params: {
+    id: string;
+    confirmation: string;
+    actorEmail: string;
+    ipHash?: string;
+  }): Promise<Result<boolean>> {
+    const res = this.deleteThoughtSync(params);
+    if (!res.success) {
+      return { success: false, error: { code: 'INVALID_INPUT', message: res.error } };
+    }
+    return { success: true, data: true };
+  }
+
+  // About Page CMS
+  getAboutPageSync(): AboutPageRecord {
+    if (!this.store.aboutPage) {
+      this.store.aboutPage = createInitialDemoAboutPage();
+    }
+    return this.store.aboutPage;
+  }
+
+  async getAboutPage(): Promise<Result<AboutPageRecord>> {
+    return { success: true, data: this.getAboutPageSync() };
+  }
+
+  saveAboutPageSync(params: {
+    page: {
+      title: string;
+      subtitle?: string;
+      contentHtml: string;
+      status: 'draft' | 'published';
+      needsLegalReview: boolean;
+    };
+    actorEmail: string;
+    ipHash?: string;
+  }): { success: true; page: AboutPageRecord } | { success: false; error: string } {
+    const { page: input, actorEmail, ipHash = 'demo_localhost' } = params;
+    const aboutSchema = z.object({
+      title: z.string().min(1, 'Title is required').max(200),
+      subtitle: z.string().max(300).optional(),
+      contentHtml: z.string().min(1, 'Content is required'),
+      status: z.enum(['draft', 'published']),
+      needsLegalReview: z.boolean(),
+    });
+
+    const parsed = aboutSchema.safeParse(input);
+    if (!parsed.success) {
+      return { success: false, error: parsed.error.issues[0]?.message || 'Invalid about page input' };
+    }
+
+    if (!this.store.aboutPage) {
+      this.store.aboutPage = createInitialDemoAboutPage();
+    }
+
+    const sanitizedHtml = sanitizeHtmlContent(parsed.data.contentHtml);
+    const nowIso = new Date().toISOString();
+    const prevPage = this.store.aboutPage;
+    const nextRevNum = (prevPage.revisions?.[0]?.revisionNumber || prevPage.revisions?.length || 0) + 1;
+
+    const newRevision: AboutRevisionRecord = {
+      id: `rev_about_${nextRevNum}`,
+      revisionNumber: nextRevNum,
+      title: parsed.data.title,
+      subtitle: parsed.data.subtitle,
+      contentHtml: sanitizedHtml,
+      status: parsed.data.status,
+      needsLegalReview: parsed.data.needsLegalReview,
+      createdAt: nowIso,
+      createdBy: actorEmail,
+    };
+
+    const updatedRevisions = [newRevision, ...(prevPage.revisions || [])].slice(0, 10);
+
+    const updatedPage: AboutPageRecord = {
+      id: 'about',
+      title: parsed.data.title,
+      subtitle: parsed.data.subtitle,
+      contentHtml: sanitizedHtml,
+      status: parsed.data.status,
+      needsLegalReview: parsed.data.needsLegalReview,
+      revisions: updatedRevisions,
+      updatedAt: nowIso,
+    };
+
+    this.store.aboutPage = updatedPage;
+
+    this.addAudit({
+      actorEmail,
+      action: 'about.update',
+      entity: 'page_about',
+      entityId: 'about',
+      before: { title: prevPage.title, status: prevPage.status, needsLegalReview: prevPage.needsLegalReview },
+      after: { title: updatedPage.title, status: updatedPage.status, needsLegalReview: updatedPage.needsLegalReview },
+      ipHash,
+    });
+
+    this.persistStore();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('ann_about_updated'));
+    }
+    return { success: true, page: updatedPage };
+  }
+
+  async saveAboutPage(params: {
+    page: {
+      title: string;
+      subtitle?: string;
+      contentHtml: string;
+      status: 'draft' | 'published';
+      needsLegalReview: boolean;
+    };
+    actorEmail: string;
+    ipHash?: string;
+  }): Promise<Result<AboutPageRecord>> {
+    const res = this.saveAboutPageSync(params);
+    if (!res.success) {
+      return { success: false, error: { code: 'INVALID_INPUT', message: res.error } };
+    }
+    return { success: true, data: res.page };
+  }
+
+  restoreAboutRevisionSync(params: {
+    revisionNumber: number;
+    actorEmail: string;
+    ipHash?: string;
+  }): { success: true; page: AboutPageRecord } | { success: false; error: string } {
+    const { revisionNumber, actorEmail, ipHash = 'demo_localhost' } = params;
+    if (!this.store.aboutPage) {
+      this.store.aboutPage = createInitialDemoAboutPage();
+    }
+
+    const prevPage = this.store.aboutPage;
+    const targetRev = prevPage.revisions?.find((r) => r.revisionNumber === revisionNumber);
+    if (!targetRev) {
+      return { success: false, error: `Revision #${revisionNumber} not found` };
+    }
+
+    const nowIso = new Date().toISOString();
+    const nextRevNum = (prevPage.revisions?.[0]?.revisionNumber || prevPage.revisions?.length || 0) + 1;
+    const restoredRevision: AboutRevisionRecord = {
+      id: `rev_about_${nextRevNum}`,
+      revisionNumber: nextRevNum,
+      title: targetRev.title,
+      subtitle: targetRev.subtitle,
+      contentHtml: targetRev.contentHtml,
+      status: targetRev.status,
+      needsLegalReview: targetRev.needsLegalReview,
+      createdAt: nowIso,
+      createdBy: `${actorEmail} (restored rev ${revisionNumber})`,
+    };
+
+    const updatedRevisions = [restoredRevision, ...(prevPage.revisions || [])].slice(0, 10);
+    const updatedPage: AboutPageRecord = {
+      id: 'about',
+      title: targetRev.title,
+      subtitle: targetRev.subtitle,
+      contentHtml: targetRev.contentHtml,
+      status: targetRev.status,
+      needsLegalReview: targetRev.needsLegalReview,
+      revisions: updatedRevisions,
+      updatedAt: nowIso,
+    };
+
+    this.store.aboutPage = updatedPage;
+
+    this.addAudit({
+      actorEmail,
+      action: 'about.restore_revision',
+      entity: 'page_about',
+      entityId: 'about',
+      before: { title: prevPage.title, restoredRevision: revisionNumber },
+      after: { title: updatedPage.title, restoredRevision: revisionNumber },
+      ipHash,
+    });
+
+    this.persistStore();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('ann_about_updated'));
+    }
+    return { success: true, page: updatedPage };
+  }
+
+  async restoreAboutRevision(params: {
+    revisionNumber: number;
+    actorEmail: string;
+    ipHash?: string;
+  }): Promise<Result<AboutPageRecord>> {
+    const res = this.restoreAboutRevisionSync(params);
+    if (!res.success) {
+      return { success: false, error: { code: 'INVALID_INPUT', message: res.error } };
+    }
+    return { success: true, data: res.page };
   }
 
   // Reset Demo Data

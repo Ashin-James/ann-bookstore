@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowDown, ArrowRight, ArrowUpRight, Mail, CheckCircle2, Lock, Clock } from 'lucide-react';
@@ -30,6 +30,39 @@ export default function Home() {
   const latestArticles = journalArticles.slice(0, 2);
   const [subscribed, setSubscribed] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'Novel' | 'Essays' | 'E-book'>('all');
+  const [activeThought, setActiveThought] = useState<{ content: string; attribution?: string } | null>(null);
+
+  useEffect(() => {
+    function syncThought() {
+      if (typeof window === 'undefined') return;
+      try {
+        const raw = window.localStorage.getItem('ann_admin_v1_store');
+        if (raw) {
+          const store = JSON.parse(raw);
+          if (Array.isArray(store.thoughts)) {
+            const published = store.thoughts
+              .filter((t: { status: string; order: number }) => t.status === 'published')
+              .sort((a: { order: number }, b: { order: number }) => a.order - b.order);
+            if (published.length > 0) {
+              setActiveThought({ content: published[0].content, attribution: published[0].attribution });
+              return;
+            }
+          }
+        }
+      } catch {
+        // Fall back to default static note
+      }
+      setActiveThought(null);
+    }
+
+    syncThought();
+    window.addEventListener('ann_thoughts_updated', syncThought);
+    window.addEventListener('storage', syncThought);
+    return () => {
+      window.removeEventListener('ann_thoughts_updated', syncThought);
+      window.removeEventListener('storage', syncThought);
+    };
+  }, []);
 
   const filteredBooks = selectedFilter === 'all'
     ? books
@@ -245,9 +278,9 @@ export default function Home() {
                   Ann writes about the quiet, unhurried moments that irrevocably alter who we become.
                 </p>
 
-                <div className="stationery-note">
+                <div className="stationery-note" data-testid="homepage-author-note">
                   <p>
-                    &ldquo;Words, like rainfall, find their own level if given enough quiet. Composed unhurriedly on acid-free archival paper.&rdquo;
+                    &ldquo;{activeThought?.content || "Words, like rainfall, find their own level if given enough quiet. Composed unhurriedly on acid-free archival paper."}&rdquo;
                   </p>
                 </div>
 
@@ -268,8 +301,8 @@ export default function Home() {
         <Container>
           <Reveal variant="fadeUpSlow">
             <span className="eyebrow">[ A THOUGHT TO KEEP ]</span>
-            <blockquote>
-              &ldquo;Somewhere between the rain and the remembering, we find our way home.&rdquo;
+            <blockquote data-testid="homepage-quote-note">
+              &ldquo;{activeThought?.content || "Somewhere between the rain and the remembering, we find our way home."}&rdquo;
             </blockquote>
 
             {/* Blind-Embossed Wax Seal Emblem */}
@@ -309,7 +342,9 @@ export default function Home() {
                 </text>
               </svg>
 
-              <span className="quote-caption">ANN · FROM THE QUIET HOURS · FIRST EDITION</span>
+              <span className="quote-caption" data-testid="homepage-quote-attribution">
+                {activeThought?.attribution || "ANN · FROM THE QUIET HOURS · FIRST EDITION"}
+              </span>
             </div>
           </Reveal>
         </Container>

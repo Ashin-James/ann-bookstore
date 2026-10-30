@@ -217,6 +217,82 @@ export interface AdminService {
     ipHash?: string;
   }): Promise<Result<JournalPostRecord>>;
 
+  // Thoughts Management
+  listThoughts?(filter?: { status?: 'all' | 'published' }): Promise<Result<ThoughtRecord[]>>;
+  saveThought?(params: {
+    thought: {
+      id?: string;
+      content: string;
+      attribution?: string;
+      status: 'draft' | 'published';
+    };
+    actorEmail: string;
+    ipHash?: string;
+  }): Promise<Result<ThoughtRecord>>;
+  reorderThoughts?(params: {
+    orderedIds: string[];
+    actorEmail: string;
+    ipHash?: string;
+  }): Promise<Result<ThoughtRecord[]>>;
+  deleteThought?(params: {
+    id: string;
+    confirmation: string;
+    actorEmail: string;
+    ipHash?: string;
+  }): Promise<Result<boolean>>;
+
+  // About Page CMS
+  getAboutPage?(): Promise<Result<AboutPageRecord>>;
+  saveAboutPage?(params: {
+    page: {
+      title: string;
+      subtitle?: string;
+      contentHtml: string;
+      status: 'draft' | 'published';
+      needsLegalReview: boolean;
+    };
+    actorEmail: string;
+    ipHash?: string;
+  }): Promise<Result<AboutPageRecord>>;
+  restoreAboutRevision?(params: {
+    revisionNumber: number;
+    actorEmail: string;
+    ipHash?: string;
+  }): Promise<Result<AboutPageRecord>>;
+
   // System & Demo
   resetDemoData(): Promise<Result<boolean>>;
+}
+
+export interface ThoughtRecord {
+  id: string;
+  content: string;
+  attribution?: string;
+  status: 'draft' | 'published';
+  order: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AboutRevisionRecord {
+  id: string;
+  revisionNumber: number;
+  title: string;
+  subtitle?: string;
+  contentHtml: string;
+  status: 'draft' | 'published';
+  needsLegalReview: boolean;
+  createdAt: string;
+  createdBy: string;
+}
+
+export interface AboutPageRecord {
+  id: 'about';
+  title: string;
+  subtitle?: string;
+  contentHtml: string;
+  status: 'draft' | 'published';
+  needsLegalReview: boolean;
+  revisions: AboutRevisionRecord[];
+  updatedAt: string;
 }
