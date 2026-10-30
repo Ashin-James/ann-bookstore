@@ -1,7 +1,16 @@
 # HANDOFF: Ann's Bookstore Demo (feat/admin)
 
 ## Current Status
-- Task A (Admin Login Credentials), Task A2 (Signed Sessions), Task A3 (Stateless Demo Sessions & Secret Rotation), Task SEC1 (Remove Hard-coded Credentials), Task B (Staff Sign-in Link), Task C (Customer Registration & Auth), Task G (Journal Editor), Task H (Thoughts and About Page), and Task I (Newsletter Signup Flow) completed and verified.
+- Task A (Admin Login Credentials), Task A2 (Signed Sessions), Task A3 (Stateless Demo Sessions & Secret Rotation), Task SEC1 (Remove Hard-coded Credentials), Task B (Staff Sign-in Link), Task C (Customer Registration & Auth), Task G (Journal Editor), Task H (Thoughts and About Page), Task I (Newsletter Signup Flow), and Task SB-1 (Supabase Foundation + Books) completed.
+
+## Supabase Real-Mode Activation Instructions
+To connect this project to Supabase:
+1. Paste `supabase/setup.sql` into the Supabase SQL editor and execute it.
+2. Run the seed script: `npm run seed:supabase` (safe to run multiple times; idempotently inserts the catalogue books).
+3. Add environment variables in Vercel (or `.env.local` for local development):
+   - `DATA_BACKEND=supabase`
+   - `NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co`
+   - `SUPABASE_SERVICE_ROLE_KEY=<service-role-secret>`
 
 ## Done
 - Part 0 baseline verification and health API.
@@ -71,6 +80,14 @@
   - Additive Supabase migration in `supabase/migrations/20261031000001_newsletter.sql` (BUILT-NOT-VERIFIED).
   - All strings translated across all 14 shipped languages. Privacy link (`/privacy`) preserved. No subscriber email in logs or URLs.
   - E2E tests in `tests/e2e/task-i-newsletter.spec.ts` (6/6 passing).
+- Task SB-1 Supabase Foundation + Books:
+  - Added `DATA_BACKEND` setting (`demo` | `supabase`, defaults to `demo`) in `.env.example`.
+  - Created single idempotent `supabase/setup.sql` (`CREATE TABLE IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`) for `books`, `book_variants`, `reviews`, `newsletter_subscribers`, and `audit_log`. RLS enabled on all tables with zero public access policies (server-only via `SUPABASE_SERVICE_ROLE_KEY`).
+  - Implemented server-only DB client (`lib/db/server.ts`) that validates presence of `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
+  - Created `/api/books` route: short cache, server-side-only logging fallback to `data/books.ts` if Supabase is unreachable or empty; POST endpoint with CSRF origin validation, admin session verification, Zod input validation, and audit logging.
+  - Added idempotent seed command `npm run seed:supabase`.
+  - Admin `/admin/books` persists mutations to Supabase when `DATA_BACKEND=supabase` while leaving existing demo in-browser flow functional.
+  - Multi-context test in `tests/e2e/task1-books.spec.ts` skips cleanly when Supabase credentials are absent and executes full verification when present.
 
 ## NOT DONE
 - Real-mode session revocation: persistent Supabase `sessions` table is not yet wired up; in demo mode, session invalidation on logout is cookie-deletion only (copied tokens remain valid until expiry).
