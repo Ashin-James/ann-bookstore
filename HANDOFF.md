@@ -43,12 +43,13 @@
 - Task G Journal Editor (admin):
   - Installed `@tiptap/react`, `@tiptap/pm`, `@tiptap/starter-kit`, `@tiptap/extension-link`, and `@tiptap/extension-image` (install size: 6.25 MB).
   - Admin page `/admin/journal`: RBAC restricted to `owner`, `admin`, `editor` (`support` and customer/signed-out users receive 404). Editor role restricted from `/admin/orders` (404).
-  - Editor features: TipTap rich text (headings, bold, italic, lists, quote, links, images requiring alt text before insertion), cover image with required alt text, category, related book selector, auto reading time calculation, SEO title/description, live preview using public journal styles, sanitization of scripts and inline handlers.
-  - Status management: `draft`, `scheduled` (with publish date), `published`. Drafts and future-dated posts return 404 publicly and never appear in public listings.
-  - Post revision history: keeps last 10 revisions per post with one-click restore.
-  - Deletion: requires typing post title to confirm.
+  - AdminService integration: Journal operations (`create`, `update`, `delete`, `restore_revision`) route through `AdminService` (`DemoAdminService` & `SupabaseAdminService`) and record immutable `audit_log` entries with actor email, action, entity, before/after states, and IP hash.
+  - Hardening & Security verified:
+    - Alt text strictly required: Cover image without alt text and editor images without alt text are refused with descriptive error alerts.
+    - XSS sanitization: Pasted `<script>` and `onerror=` handlers are sanitized in `saveJournalPostSync` and never appear in saved demo store or public storefront HTML.
+    - Status & future date isolation: Drafts and future-dated scheduled posts return 404 publicly on direct URL `/journal/[slug]` and never appear in public listing `/journal`.
+    - Revision history: Restoring revision 1 re-applies revision 1 content, increments revision count, records audit log, and reflects immediately on public storefront.
   - Multi-language: UI strings translated across all 14 shipped languages.
-  - Demo store persistence in `ann_admin_v1_store` (browser-local).
   - Additive Supabase migration in `supabase/migrations/20261030000000_journal.sql`.
 
 ## NOT DONE
