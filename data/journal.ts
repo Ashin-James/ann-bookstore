@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { getAdminService } from '@/lib/admin/service-factory';
+import { DemoAdminService } from '@/lib/admin/demo-admin-service';
 
 export interface JournalArticle {
   id: string;
@@ -168,11 +170,12 @@ export function sanitizeHtmlContent(html: string): string {
   if (!html) return '';
   return html
     .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
+    .replace(/&lt;script[\s\S]*?&gt;[\s\S]*?&lt;\/script&gt;/gi, '')
     .replace(/<iframe[\s\S]*?>[\s\S]*?<\/iframe>/gi, '')
     .replace(/<object[\s\S]*?>[\s\S]*?<\/object>/gi, '')
     .replace(/<embed[\s\S]*?>[\s\S]*?<\/embed>/gi, '')
-    .replace(/\son\w+\s*=\s*(['"]).*?\1/gi, '')
-    .replace(/\son\w+\s*=\s*[^\s>]+/gi, '')
+    .replace(/\s*on\w+\s*=\s*(['"]).*?\1/gi, '')
+    .replace(/\s*on\w+\s*=\s*[^\s>]+/gi, '')
     .replace(/href\s*=\s*(['"])javascript:.*?\1/gi, 'href="#"')
     .replace(/src\s*=\s*(['"])javascript:.*?\1/gi, 'src=""');
 }
@@ -203,9 +206,9 @@ export function validateImageAltTags(html: string): boolean {
   return true;
 }
 
-const STORAGE_KEY = 'ann_admin_v1_store';
+export const STORAGE_KEY = 'ann_admin_v1_store';
 
-function createInitialDemoJournalPosts(): JournalPostRecord[] {
+export function createInitialDemoJournalPosts(): JournalPostRecord[] {
   return journalArticles.map((art) => ({
     id: art.id,
     slug: art.slug,
@@ -242,22 +245,29 @@ function createInitialDemoJournalPosts(): JournalPostRecord[] {
 export function getStorefrontJournalArticles(): JournalArticle[] {
   if (typeof window !== 'undefined') {
     try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed.journalPosts) && parsed.journalPosts.length > 0) {
-          const now = Date.now();
-          return parsed.journalPosts
-            .filter((p: JournalPostRecord) => {
-              if (p.status !== 'published') return false;
-              if (p.publishDate) {
-                const pubTime = new Date(p.publishDate).getTime();
-                if (!isNaN(pubTime) && pubTime > now) return false;
-              }
-              return true;
-            })
-            .map((p: JournalPostRecord) => convertRecordToArticle(p));
+      const service = getAdminService();
+      let allPosts: JournalPostRecord[] = [];
+      if (service instanceof DemoAdminService) {
+        allPosts = service.listJournalPostsSync();
+      } else {
+        const raw = window.localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed.journalPosts)) allPosts = parsed.journalPosts;
         }
+      }
+      if (allPosts.length > 0) {
+        const now = Date.now();
+        return allPosts
+          .filter((p: JournalPostRecord) => {
+            if (p.status !== 'published') return false;
+            if (p.publishDate) {
+              const pubTime = new Date(p.publishDate).getTime();
+              if (!isNaN(pubTime) && pubTime > now) return false;
+            }
+            return true;
+          })
+          .map((p: JournalPostRecord) => convertRecordToArticle(p));
       }
     } catch {
       // Fallback
@@ -314,44 +324,22 @@ function convertRecordToArticle(record: JournalPostRecord): JournalArticle {
 
 /**
  * Returns all admin journal posts (including drafts and scheduled), with optional filter/search.
+ * Routes directly through AdminService (DemoAdminService in demo mode).
  */
 export function getAdminJournalPosts(filter?: {
   status?: string;
   search?: string;
 }): JournalPostRecord[] {
   if (typeof window === 'undefined') return [];
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    let store: { journalPosts?: JournalPostRecord[] } = {};
-    if (raw) {
-      store = JSON.parse(raw);
-    }
-    if (!Array.isArray(store.journalPosts)) {
-      store.journalPosts = createInitialDemoJournalPosts();
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
-    }
-
-    let posts = store.journalPosts;
-    if (filter?.status && filter.status !== 'all') {
-      posts = posts.filter((p) => p.status === filter.status);
-    }
-    if (filter?.search && filter.search.trim()) {
-      const q = filter.search.toLowerCase();
-      posts = posts.filter(
-        (p) =>
-          p.title.toLowerCase().includes(q) ||
-          p.category.toLowerCase().includes(q) ||
-          (p.subtitle && p.subtitle.toLowerCase().includes(q))
-      );
-    }
-    return posts;
-  } catch {
-    return [];
+  const service = getAdminService();
+  if (service instanceof DemoAdminService) {
+    return service.listJournalPostsSync(filter);
   }
+  return [];
 }
 
 /**
- * Saves a journal post in the demo store.
+ * Saves a journal post via AdminService (DemoAdminService / SupabaseAdminService).
  * Manages the last 10 revisions, sanitizes HTML, calculates read time,
  * records audit log, and dispatches change events.
  */
@@ -362,170 +350,16 @@ export function saveAdminJournalPost(
   if (typeof window === 'undefined') {
     return { success: false, error: 'Window not defined' };
   }
-
-  // 1. Zod Validation
-  const parsed = journalPostInputSchema.safeParse(input);
-  if (!parsed.success) {
-    return { success: false, error: parsed.error.issues[0].message };
+  const service = getAdminService();
+  if (service instanceof DemoAdminService) {
+    return service.saveJournalPostSync({ post: input, actorEmail });
   }
-
-  // 2. Validate image alt tags
-  if (!validateImageAltTags(parsed.data.contentHtml)) {
-    return {
-      success: false,
-      error: 'Every embedded image must include descriptive alt text before saving.',
-    };
-  }
-
-  // 3. Sanitize HTML
-  const sanitizedHtml = sanitizeHtmlContent(parsed.data.contentHtml);
-  const readTime = calculateReadingTime(sanitizedHtml);
-  const nowIso = new Date().toISOString();
-
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    const store = raw ? JSON.parse(raw) : {};
-    if (!Array.isArray(store.journalPosts)) {
-      store.journalPosts = createInitialDemoJournalPosts();
-    }
-    if (!Array.isArray(store.auditLogs)) {
-      store.auditLogs = [];
-    }
-
-    const posts: JournalPostRecord[] = store.journalPosts;
-    const isNew = !input.id || !posts.some((p) => p.id === input.id);
-
-    const slug = (
-      input.title
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '') || `post-${Date.now()}`
-    );
-
-    let targetPost: JournalPostRecord;
-
-    if (isNew) {
-      const newId = input.id || `post_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-      const firstRevision: JournalRevisionRecord = {
-        id: `rev_${newId}_1`,
-        postId: newId,
-        revisionNumber: 1,
-        title: parsed.data.title,
-        subtitle: parsed.data.subtitle || '',
-        contentHtml: sanitizedHtml,
-        coverImage: parsed.data.coverImage,
-        coverImageAlt: parsed.data.coverImageAlt,
-        category: parsed.data.category,
-        createdAt: nowIso,
-        createdBy: actorEmail,
-      };
-
-      targetPost = {
-        id: newId,
-        slug,
-        title: parsed.data.title,
-        subtitle: parsed.data.subtitle || '',
-        category: parsed.data.category,
-        excerpt: parsed.data.excerpt || '',
-        contentHtml: sanitizedHtml,
-        coverImage: parsed.data.coverImage,
-        coverImageAlt: parsed.data.coverImageAlt,
-        relatedBookSlug: parsed.data.relatedBookSlug,
-        relatedBookTitle: parsed.data.relatedBookTitle,
-        status: parsed.data.status,
-        publishDate: parsed.data.publishDate,
-        readTime,
-        seoTitle: parsed.data.seoTitle,
-        seoDescription: parsed.data.seoDescription,
-        revisions: [firstRevision],
-        createdAt: nowIso,
-        updatedAt: nowIso,
-      };
-      posts.unshift(targetPost);
-
-      store.auditLogs.unshift({
-        id: `aud_${Date.now()}`,
-        actorId: 'usr_editor',
-        actorEmail,
-        action: 'journal.create',
-        entity: 'journal_post',
-        entityId: newId,
-        beforeState: null,
-        afterState: { title: targetPost.title, status: targetPost.status },
-        ipHash: 'local_hash',
-        createdAt: nowIso,
-      });
-    } else {
-      const idx = posts.findIndex((p) => p.id === input.id);
-      const existing = posts[idx];
-      const nextRevNum = (existing.revisions?.[0]?.revisionNumber || existing.revisions?.length || 0) + 1;
-
-      const newRevision: JournalRevisionRecord = {
-        id: `rev_${existing.id}_${nextRevNum}`,
-        postId: existing.id,
-        revisionNumber: nextRevNum,
-        title: parsed.data.title,
-        subtitle: parsed.data.subtitle || '',
-        contentHtml: sanitizedHtml,
-        coverImage: parsed.data.coverImage,
-        coverImageAlt: parsed.data.coverImageAlt,
-        category: parsed.data.category,
-        createdAt: nowIso,
-        createdBy: actorEmail,
-      };
-
-      // Keep last 10 revisions
-      const updatedRevisions = [newRevision, ...(existing.revisions || [])].slice(0, 10);
-
-      targetPost = {
-        ...existing,
-        title: parsed.data.title,
-        slug,
-        subtitle: parsed.data.subtitle || '',
-        category: parsed.data.category,
-        excerpt: parsed.data.excerpt || '',
-        contentHtml: sanitizedHtml,
-        coverImage: parsed.data.coverImage,
-        coverImageAlt: parsed.data.coverImageAlt,
-        relatedBookSlug: parsed.data.relatedBookSlug,
-        relatedBookTitle: parsed.data.relatedBookTitle,
-        status: parsed.data.status,
-        publishDate: parsed.data.publishDate,
-        readTime,
-        seoTitle: parsed.data.seoTitle,
-        seoDescription: parsed.data.seoDescription,
-        revisions: updatedRevisions,
-        updatedAt: nowIso,
-      };
-      posts[idx] = targetPost;
-
-      store.auditLogs.unshift({
-        id: `aud_${Date.now()}`,
-        actorId: 'usr_editor',
-        actorEmail,
-        action: 'journal.update',
-        entity: 'journal_post',
-        entityId: existing.id,
-        beforeState: { title: existing.title, status: existing.status },
-        afterState: { title: targetPost.title, status: targetPost.status },
-        ipHash: 'local_hash',
-        createdAt: nowIso,
-      });
-    }
-
-    store.journalPosts = posts;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
-    window.dispatchEvent(new CustomEvent('ann_journal_updated'));
-
-    return { success: true, post: targetPost };
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : 'Storage error';
-    return { success: false, error: msg };
-  }
+  return { success: false, error: 'AdminService is not available in current environment' };
 }
 
 /**
- * Restores a specific revision for a journal post.
+ * Restores a specific revision for a journal post via AdminService.
+ * Records audit_log row and dispatches change event.
  */
 export function restoreAdminJournalRevision(
   postId: string,
@@ -533,76 +367,16 @@ export function restoreAdminJournalRevision(
   actorEmail = 'editor@annsbookstore.demo'
 ): { success: true; post: JournalPostRecord } | { success: false; error: string } {
   if (typeof window === 'undefined') return { success: false, error: 'Window not defined' };
-
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    const store = raw ? JSON.parse(raw) : {};
-    if (!Array.isArray(store.journalPosts)) return { success: false, error: 'No posts found' };
-
-    const idx = store.journalPosts.findIndex((p: JournalPostRecord) => p.id === postId);
-    if (idx === -1) return { success: false, error: 'Post not found' };
-
-    const post = store.journalPosts[idx];
-    const targetRev = post.revisions?.find((r: JournalRevisionRecord) => r.revisionNumber === revisionNumber);
-    if (!targetRev) return { success: false, error: 'Revision not found' };
-
-    const nowIso = new Date().toISOString();
-    const nextRevNum = (post.revisions?.[0]?.revisionNumber || post.revisions?.length || 0) + 1;
-    const restoredRevision: JournalRevisionRecord = {
-      id: `rev_${post.id}_${nextRevNum}`,
-      postId: post.id,
-      revisionNumber: nextRevNum,
-      title: targetRev.title,
-      subtitle: targetRev.subtitle,
-      contentHtml: targetRev.contentHtml,
-      coverImage: targetRev.coverImage,
-      coverImageAlt: targetRev.coverImageAlt,
-      category: targetRev.category,
-      createdAt: nowIso,
-      createdBy: `${actorEmail} (restored rev ${revisionNumber})`,
-    };
-
-    const updatedRevisions = [restoredRevision, ...(post.revisions || [])].slice(0, 10);
-    const updatedPost: JournalPostRecord = {
-      ...post,
-      title: targetRev.title,
-      subtitle: targetRev.subtitle,
-      contentHtml: targetRev.contentHtml,
-      coverImage: targetRev.coverImage,
-      coverImageAlt: targetRev.coverImageAlt,
-      category: targetRev.category,
-      readTime: calculateReadingTime(targetRev.contentHtml),
-      revisions: updatedRevisions,
-      updatedAt: nowIso,
-    };
-
-    store.journalPosts[idx] = updatedPost;
-    if (!Array.isArray(store.auditLogs)) store.auditLogs = [];
-    store.auditLogs.unshift({
-      id: `aud_${Date.now()}`,
-      actorId: 'usr_editor',
-      actorEmail,
-      action: 'journal.restore_revision',
-      entity: 'journal_post',
-      entityId: post.id,
-      beforeState: { title: post.title },
-      afterState: { title: updatedPost.title, restoredRevision: revisionNumber },
-      ipHash: 'local_hash',
-      createdAt: nowIso,
-    });
-
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
-    window.dispatchEvent(new CustomEvent('ann_journal_updated'));
-
-    return { success: true, post: updatedPost };
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : 'Restore failed';
-    return { success: false, error: msg };
+  const service = getAdminService();
+  if (service instanceof DemoAdminService) {
+    return service.restoreJournalRevisionSync({ postId, revisionNumber, actorEmail });
   }
+  return { success: false, error: 'AdminService is not available in current environment' };
 }
 
 /**
- * Deletes a journal post after verifying exact title match.
+ * Deletes a journal post after verifying exact title match via AdminService.
+ * Records audit_log row and dispatches change event.
  */
 export function deleteAdminJournalPost(
   id: string,
@@ -610,41 +384,9 @@ export function deleteAdminJournalPost(
   actorEmail = 'editor@annsbookstore.demo'
 ): { success: true } | { success: false; error: string } {
   if (typeof window === 'undefined') return { success: false, error: 'Window not defined' };
-
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    const store = raw ? JSON.parse(raw) : {};
-    if (!Array.isArray(store.journalPosts)) return { success: false, error: 'No posts found' };
-
-    const idx = store.journalPosts.findIndex((p: JournalPostRecord) => p.id === id);
-    if (idx === -1) return { success: false, error: 'Post not found' };
-
-    const post = store.journalPosts[idx];
-    if (titleConfirmation.trim() !== post.title.trim()) {
-      return { success: false, error: 'Typed title does not match post title exactly' };
-    }
-
-    store.journalPosts.splice(idx, 1);
-    if (!Array.isArray(store.auditLogs)) store.auditLogs = [];
-    store.auditLogs.unshift({
-      id: `aud_${Date.now()}`,
-      actorId: 'usr_editor',
-      actorEmail,
-      action: 'journal.delete',
-      entity: 'journal_post',
-      entityId: id,
-      beforeState: { title: post.title },
-      afterState: null,
-      ipHash: 'local_hash',
-      createdAt: new Date().toISOString(),
-    });
-
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
-    window.dispatchEvent(new CustomEvent('ann_journal_updated'));
-
-    return { success: true };
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : 'Delete failed';
-    return { success: false, error: msg };
+  const service = getAdminService();
+  if (service instanceof DemoAdminService) {
+    return service.deleteJournalPostSync({ id, titleConfirmation, actorEmail });
   }
+  return { success: false, error: 'AdminService is not available in current environment' };
 }

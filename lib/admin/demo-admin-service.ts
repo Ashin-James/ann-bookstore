@@ -35,6 +35,16 @@ import {
   SESSION_MAX_AGE_MS,
   verifyPassword,
 } from './auth';
+import {
+  JournalPostRecord,
+  JournalRevisionRecord,
+  journalPostInputSchema,
+  sanitizeHtmlContent,
+  calculateReadingTime,
+  validateImageAltTags,
+  createInitialDemoJournalPosts,
+} from '@/data/journal';
+import { z } from 'zod';
 
 const STORAGE_PREFIX = 'ann_admin_v1_';
 
@@ -48,6 +58,7 @@ interface DemoDataStore {
   coupons: CouponRecord[];
   reviews: ReviewRecord[];
   subscribers: SubscriberRecord[];
+  journalPosts?: JournalPostRecord[];
   setupCompleted: boolean;
   passwords?: Record<string, string>;
 }
@@ -64,7 +75,11 @@ export class DemoAdminService implements AdminService {
       try {
         const raw = window.localStorage.getItem(STORAGE_PREFIX + 'store');
         if (raw) {
-          return JSON.parse(raw);
+          const parsed = JSON.parse(raw);
+          if (!Array.isArray(parsed.journalPosts)) {
+            parsed.journalPosts = createInitialDemoJournalPosts();
+          }
+          return parsed;
         }
       } catch {
         // Fall back to clean state if JSON corrupted
@@ -125,6 +140,7 @@ export class DemoAdminService implements AdminService {
       coupons: seedCoupons,
       reviews: seedReviews,
       subscribers: seedSubscribers,
+      journalPosts: createInitialDemoJournalPosts(),
       setupCompleted: false,
       passwords: {},
     };
@@ -1127,6 +1143,331 @@ export class DemoAdminService implements AdminService {
     });
 
     return { success: true, data: header + rows };
+  }
+
+  // Content: Journal Posts
+  listJournalPostsSync(filters?: { status?: string; search?: string }): JournalPostRecord[] {
+    if (!Array.isArray(this.store.journalPosts)) {
+      this.store.journalPosts = createInitialDemoJournalPosts();
+      this.persistStore();
+    }
+    let posts = this.store.journalPosts;
+    if (filters?.status && filters.status !== 'all') {
+      posts = posts.filter((p) => p.status === filters.status);
+    }
+    if (filters?.search && filters.search.trim()) {
+      const q = filters.search.toLowerCase();
+      posts = posts.filter(
+        (p) =>
+          p.title.toLowerCase().includes(q) ||
+          p.category.toLowerCase().includes(q) ||
+          (p.subtitle && p.subtitle.toLowerCase().includes(q))
+      );
+    }
+    return posts;
+  }
+
+  async listJournalPosts(filters?: { status?: string; search?: string }): Promise<Result<JournalPostRecord[]>> {
+    return { success: true, data: this.listJournalPostsSync(filters) };
+  }
+
+  getJournalPostSync(idOrSlug: string): JournalPostRecord | undefined {
+    return this.listJournalPostsSync().find((p) => p.id === idOrSlug || p.slug === idOrSlug);
+  }
+
+  async getJournalPost(idOrSlug: string): Promise<Result<JournalPostRecord>> {
+    const post = this.getJournalPostSync(idOrSlug);
+    if (!post) {
+      return { success: false, error: { code: 'NOT_FOUND', message: 'Journal post not found.' } };
+    }
+    return { success: true, data: post };
+  }
+
+  saveJournalPostSync(params: {
+    post: z.infer<typeof journalPostInputSchema>;
+    actorEmail: string;
+    ipHash?: string;
+  }): { success: true; post: JournalPostRecord } | { success: false; error: string } {
+    const { post: input, actorEmail, ipHash = 'demo_localhost' } = params;
+
+    // 1. Zod Validation
+    const parsed = journalPostInputSchema.safeParse(input);
+    if (!parsed.success) {
+      return { success: false, error: parsed.error.issues[0].message };
+    }
+
+    // 2. Validate image alt tags
+    if (!validateImageAltTags(parsed.data.contentHtml)) {
+      return {
+        success: false,
+        error: 'Every embedded image must include descriptive alt text before saving.',
+      };
+    }
+
+    // 3. Sanitize HTML
+    const sanitizedHtml = sanitizeHtmlContent(parsed.data.contentHtml);
+    const readTime = calculateReadingTime(sanitizedHtml);
+    const nowIso = new Date().toISOString();
+
+    if (!Array.isArray(this.store.journalPosts)) {
+      this.store.journalPosts = createInitialDemoJournalPosts();
+    }
+
+    const posts = this.store.journalPosts;
+    const isNew = !input.id || !posts.some((p) => p.id === input.id);
+
+    const slug = (
+      input.title
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '') || 'untitled'
+    );
+
+    let targetPost: JournalPostRecord;
+
+    if (isNew) {
+      const postId = `post_${Date.now()}`;
+      const rev1: JournalRevisionRecord = {
+        id: `rev_${postId}_1`,
+        postId,
+        revisionNumber: 1,
+        title: parsed.data.title,
+        subtitle: parsed.data.subtitle || '',
+        contentHtml: sanitizedHtml,
+        coverImage: parsed.data.coverImage,
+        coverImageAlt: parsed.data.coverImageAlt,
+        category: parsed.data.category,
+        createdAt: nowIso,
+        createdBy: actorEmail,
+      };
+
+      targetPost = {
+        id: postId,
+        slug,
+        title: parsed.data.title,
+        subtitle: parsed.data.subtitle || '',
+        category: parsed.data.category,
+        excerpt: parsed.data.excerpt || '',
+        contentHtml: sanitizedHtml,
+        coverImage: parsed.data.coverImage,
+        coverImageAlt: parsed.data.coverImageAlt,
+        relatedBookSlug: parsed.data.relatedBookSlug,
+        relatedBookTitle: parsed.data.relatedBookTitle,
+        status: parsed.data.status,
+        publishDate: parsed.data.publishDate,
+        readTime,
+        seoTitle: parsed.data.seoTitle,
+        seoDescription: parsed.data.seoDescription,
+        revisions: [rev1],
+        createdAt: nowIso,
+        updatedAt: nowIso,
+      };
+
+      posts.unshift(targetPost);
+    } else {
+      const existingIdx = posts.findIndex((p) => p.id === input.id);
+      const existing = posts[existingIdx];
+      const prevRevs = existing.revisions || [];
+      const nextRevNum = (prevRevs[0]?.revisionNumber || prevRevs.length || 0) + 1;
+
+      const newRev: JournalRevisionRecord = {
+        id: `rev_${existing.id}_${nextRevNum}`,
+        postId: existing.id,
+        revisionNumber: nextRevNum,
+        title: parsed.data.title,
+        subtitle: parsed.data.subtitle || '',
+        contentHtml: sanitizedHtml,
+        coverImage: parsed.data.coverImage,
+        coverImageAlt: parsed.data.coverImageAlt,
+        category: parsed.data.category,
+        createdAt: nowIso,
+        createdBy: actorEmail,
+      };
+
+      const updatedRevs = [newRev, ...prevRevs].slice(0, 10);
+
+      targetPost = {
+        ...existing,
+        slug,
+        title: parsed.data.title,
+        subtitle: parsed.data.subtitle || '',
+        category: parsed.data.category,
+        excerpt: parsed.data.excerpt || '',
+        contentHtml: sanitizedHtml,
+        coverImage: parsed.data.coverImage,
+        coverImageAlt: parsed.data.coverImageAlt,
+        relatedBookSlug: parsed.data.relatedBookSlug,
+        relatedBookTitle: parsed.data.relatedBookTitle,
+        status: parsed.data.status,
+        publishDate: parsed.data.publishDate,
+        readTime,
+        seoTitle: parsed.data.seoTitle,
+        seoDescription: parsed.data.seoDescription,
+        revisions: updatedRevs,
+        updatedAt: nowIso,
+      };
+
+      posts[existingIdx] = targetPost;
+    }
+
+    this.addAudit({
+      actorEmail,
+      action: isNew ? 'journal.create' : 'journal.update',
+      entity: 'journal_post',
+      entityId: targetPost.id,
+      before: isNew ? null : { title: targetPost.title },
+      after: { title: targetPost.title, status: targetPost.status },
+      ipHash,
+    });
+
+    this.persistStore();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('ann_journal_updated'));
+    }
+
+    return { success: true, post: targetPost };
+  }
+
+  async saveJournalPost(params: {
+    post: z.infer<typeof journalPostInputSchema>;
+    actorEmail: string;
+    ipHash?: string;
+  }): Promise<Result<JournalPostRecord>> {
+    const res = this.saveJournalPostSync(params);
+    if (!res.success) {
+      return { success: false, error: { code: 'INVALID_INPUT', message: res.error } };
+    }
+    return { success: true, data: res.post };
+  }
+
+  deleteJournalPostSync(params: {
+    id: string;
+    titleConfirmation: string;
+    actorEmail: string;
+    ipHash?: string;
+  }): { success: true } | { success: false; error: string } {
+    const { id, titleConfirmation, actorEmail, ipHash = 'demo_localhost' } = params;
+    if (!Array.isArray(this.store.journalPosts)) {
+      this.store.journalPosts = createInitialDemoJournalPosts();
+    }
+    const idx = this.store.journalPosts.findIndex((p) => p.id === id);
+    if (idx === -1) return { success: false, error: 'Post not found' };
+
+    const post = this.store.journalPosts[idx];
+    if (titleConfirmation.trim() !== post.title.trim()) {
+      return { success: false, error: 'Typed title does not match post title exactly' };
+    }
+
+    this.store.journalPosts.splice(idx, 1);
+    this.addAudit({
+      actorEmail,
+      action: 'journal.delete',
+      entity: 'journal_post',
+      entityId: id,
+      before: { title: post.title },
+      after: null,
+      ipHash,
+    });
+
+    this.persistStore();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('ann_journal_updated'));
+    }
+
+    return { success: true };
+  }
+
+  async deleteJournalPost(params: {
+    id: string;
+    titleConfirmation: string;
+    actorEmail: string;
+    ipHash?: string;
+  }): Promise<Result<boolean>> {
+    const res = this.deleteJournalPostSync(params);
+    if (!res.success) {
+      return { success: false, error: { code: 'INVALID_INPUT', message: res.error } };
+    }
+    return { success: true, data: true };
+  }
+
+  restoreJournalRevisionSync(params: {
+    postId: string;
+    revisionNumber: number;
+    actorEmail: string;
+    ipHash?: string;
+  }): { success: true; post: JournalPostRecord } | { success: false; error: string } {
+    const { postId, revisionNumber, actorEmail, ipHash = 'demo_localhost' } = params;
+    if (!Array.isArray(this.store.journalPosts)) {
+      this.store.journalPosts = createInitialDemoJournalPosts();
+    }
+    const idx = this.store.journalPosts.findIndex((p) => p.id === postId);
+    if (idx === -1) return { success: false, error: 'Post not found' };
+
+    const post = this.store.journalPosts[idx];
+    const targetRev = post.revisions?.find((r) => r.revisionNumber === revisionNumber);
+    if (!targetRev) return { success: false, error: 'Revision not found' };
+
+    const nowIso = new Date().toISOString();
+    const nextRevNum = (post.revisions?.[0]?.revisionNumber || post.revisions?.length || 0) + 1;
+    const restoredRevision: JournalRevisionRecord = {
+      id: `rev_${post.id}_${nextRevNum}`,
+      postId: post.id,
+      revisionNumber: nextRevNum,
+      title: targetRev.title,
+      subtitle: targetRev.subtitle,
+      contentHtml: targetRev.contentHtml,
+      coverImage: targetRev.coverImage,
+      coverImageAlt: targetRev.coverImageAlt,
+      category: targetRev.category,
+      createdAt: nowIso,
+      createdBy: `${actorEmail} (restored rev ${revisionNumber})`,
+    };
+
+    const updatedRevisions = [restoredRevision, ...(post.revisions || [])].slice(0, 10);
+    const updatedPost: JournalPostRecord = {
+      ...post,
+      title: targetRev.title,
+      subtitle: targetRev.subtitle,
+      contentHtml: targetRev.contentHtml,
+      coverImage: targetRev.coverImage,
+      coverImageAlt: targetRev.coverImageAlt,
+      category: targetRev.category,
+      readTime: calculateReadingTime(targetRev.contentHtml),
+      revisions: updatedRevisions,
+      updatedAt: nowIso,
+    };
+
+    this.store.journalPosts[idx] = updatedPost;
+    this.addAudit({
+      actorEmail,
+      action: 'journal.restore_revision',
+      entity: 'journal_post',
+      entityId: post.id,
+      before: { title: post.title },
+      after: { title: updatedPost.title, restoredRevision: revisionNumber },
+      ipHash,
+    });
+
+    this.persistStore();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('ann_journal_updated'));
+    }
+
+    return { success: true, post: updatedPost };
+  }
+
+  async restoreJournalRevision(params: {
+    postId: string;
+    revisionNumber: number;
+    actorEmail: string;
+    ipHash?: string;
+  }): Promise<Result<JournalPostRecord>> {
+    const res = this.restoreJournalRevisionSync(params);
+    if (!res.success) {
+      return { success: false, error: { code: 'INVALID_INPUT', message: res.error } };
+    }
+    return { success: true, data: res.post };
   }
 
   // Reset Demo Data

@@ -103,7 +103,7 @@ test.describe('TASK G: Journal Editor, Revisions, Status Isolation & RBAC Suite'
     await anonContext.close();
   });
 
-  test('2. Complete Journal Lifecycle: Create with image (alt required), preview, publish, edit, restore rev 1, and draft 404', async ({
+  test('2. Complete Journal Lifecycle: Cover/image alt requirement, XSS sanitization, revisions, and status/future 404 isolation', async ({
     page,
     baseURL,
   }) => {
@@ -112,7 +112,11 @@ test.describe('TASK G: Journal Editor, Revisions, Status Isolation & RBAC Suite'
     const testSlug = `monsoon-reflections-vol-${now}`;
     const draftTitle = `Secret Draft Musings ${now}`;
     const draftSlug = `secret-draft-musings-${now}`;
+    const futureTitle = `Future Dispatch Year 2030 ${now}`;
+    const futureSlug = `future-dispatch-year-2030-${now}`;
 
+    // Admin session created with zero hardcoded credentials:
+    // Signs HMAC-SHA256 session token using SESSION_SECRET loaded from process.env (.env.local)
     const adminToken = await createSignedSessionToken({
       id: `sess_admin_${now}`,
       userId: 'usr_admin_01',
@@ -131,37 +135,63 @@ test.describe('TASK G: Journal Editor, Revisions, Status Isolation & RBAC Suite'
     await expect(page.locator('h1')).toContainText(/Journal & Editorial/i);
     await expect(page.locator('[data-testid="journal-demo-notice"]')).toBeVisible();
 
-    // Step B: Create a post with an image (alt text required)
+    // Step B: Create a post - Cover image alt is strictly required
     await page.click('[data-testid="btn-create-post"]');
     await page.fill('[data-testid="input-post-title"]', testTitle);
     await page.fill('[data-testid="input-post-subtitle"]', 'Reflections on the sound of rain on veranda stone.');
     await page.fill('[data-testid="input-post-category"]', 'Reflections');
 
-    // Attempt to insert image without alt text
+    // Supply cover image WITHOUT alt text -> Refused
+    await page.fill('[data-testid="input-cover-image"]', 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c');
+    await page.fill('[data-testid="input-cover-alt"]', '');
+    const editorSurface = page.locator('[data-testid="tiptap-editor-surface"] .tiptap');
+    await editorSurface.click();
+    await page.keyboard.type('Initial draft body for alt test.');
+    await page.click('[data-testid="btn-save-post"]');
+
+    // Verify error for missing cover alt
+    const coverAltError = page.locator('[data-testid="admin-journal-error"]');
+    await expect(coverAltError).toBeVisible();
+    await expect(coverAltError).toContainText(/Cover image alt text is required/i);
+
+    // Provide valid cover alt text
+    await page.fill('[data-testid="input-cover-alt"]', 'Open journal on wooden table beside cup of black tea');
+
+    // Embedded image in editor WITHOUT alt text -> Refused
     await page.click('[data-testid="editor-btn-image"]');
     await expect(page.locator('[data-testid="modal-insert-image"]')).toBeVisible();
     await page.fill('[data-testid="input-modal-image-url"]', 'https://images.unsplash.com/photo-1512820790803-83ca734da794');
     await page.click('[data-testid="btn-confirm-insert-image"]');
 
-    // Error message: Alt text is required
-    const errorMsg = page.locator('[data-testid="modal-image-error"]');
-    await expect(errorMsg).toBeVisible();
-    await expect(errorMsg).toContainText(/Alt Text is strictly required/i);
+    const modalError = page.locator('[data-testid="modal-image-error"]');
+    await expect(modalError).toBeVisible();
+    await expect(modalError).toContainText(/Alt Text is strictly required/i);
 
     // Provide Alt text and confirm insert
     await page.fill('[data-testid="input-modal-image-alt"]', 'Open leatherbound book on oak desk with rain outside');
     await page.click('[data-testid="btn-confirm-insert-image"]');
     await expect(page.locator('[data-testid="modal-insert-image"]')).not.toBeVisible();
 
-    // Type body content into TipTap editor
-    const editorSurface = page.locator('[data-testid="tiptap-editor-surface"] .tiptap');
+    // Step C: XSS Sanitization Test: Pasting <script> and onerror= into editor
     await editorSurface.click();
-    await page.keyboard.type('In the quietest rooms of monsoon morning, memory slow-cooks the days we forgot.');
+    await page.keyboard.type(' In the quietest rooms of monsoon morning.');
+
+    // Paste HTML containing script and onerror into the editor
+    await page.evaluate(() => {
+      const dt = new DataTransfer();
+      dt.setData('text/html', '<script>alert("xss-injected")</script><img src="x" onerror="alert(1)" alt="safe description">');
+      const event = new ClipboardEvent('paste', {
+        clipboardData: dt,
+        bubbles: true,
+        cancelable: true,
+      });
+      document.querySelector('[data-testid="tiptap-editor-surface"] .tiptap')?.dispatchEvent(event);
+    });
 
     // Select related book
     await page.selectOption('[data-testid="select-related-book"]', { label: 'The Quiet Hours' });
 
-    // Step C: Live Preview with public journal styles
+    // Step D: Live Preview with public journal styles
     await page.click('[data-testid="btn-toggle-preview"]');
     await expect(page.locator('[data-testid="journal-live-preview"]')).toBeVisible();
     await expect(page.locator('[data-testid="preview-title"]')).toHaveText(testTitle);
@@ -172,21 +202,45 @@ test.describe('TASK G: Journal Editor, Revisions, Status Isolation & RBAC Suite'
     await page.click('[data-testid="btn-toggle-preview"]');
     await expect(page.locator('[data-testid="input-post-title"]')).toBeVisible();
 
-    // Step D: Publish post
+    // Step E: Publish post
     await page.selectOption('[data-testid="select-post-status"]', 'published');
     await page.click('[data-testid="btn-save-post"]');
     await expect(page.locator('[data-testid="admin-journal-success"]')).toBeVisible();
 
-    // Step E: Verify live appearance on storefront /journal
+    // Assert: Pasted <script> and onerror= never appear in saved HTML
+    const savedHtmlCheck = await page.evaluate((slug) => {
+      try {
+        const raw = window.localStorage.getItem('ann_admin_v1_store');
+        if (!raw) return { found: false, html: '' };
+        const parsed = JSON.parse(raw);
+        const post = parsed.journalPosts?.find((p: { slug: string }) => p.slug === slug);
+        return { found: Boolean(post), html: post?.contentHtml || '' };
+      } catch {
+        return { found: false, html: '' };
+      }
+    }, testSlug);
+    expect(savedHtmlCheck.found).toBe(true);
+    expect(savedHtmlCheck.html).not.toContain('<script');
+    expect(savedHtmlCheck.html).not.toContain('onerror=');
+
+    // Step F: Verify storefront /journal listing and sanitized article page
     await page.goto('/journal', { waitUntil: 'domcontentloaded' });
     const postCard = page.locator(`[data-testid="journal-card-${testSlug}"]`);
     await expect(postCard).toBeVisible();
     await expect(postCard).toContainText(testTitle);
 
-    // Step F: Verify direct article URL
+    // Direct article URL verification
     await page.goto(`/journal/${testSlug}`, { waitUntil: 'domcontentloaded' });
     await expect(page.locator('[data-testid="journal-article-title"]')).toHaveText(testTitle);
     await expect(page.locator('[data-testid="journal-article-content"]')).toContainText('In the quietest rooms');
+
+    // Strict sanitization assertion: script and onerror NEVER appear in saved or public HTML
+    const articleHtml = await page.locator('[data-testid="journal-article-content"]').innerHTML();
+    expect(articleHtml).not.toContain('<script');
+    expect(articleHtml).not.toContain('onerror=');
+    const publicPageHtml = await page.content();
+    expect(publicPageHtml).not.toContain('<script>alert(');
+    expect(publicPageHtml).not.toContain('onerror=');
 
     // Step G: Edit post, create Revision #2
     await page.goto('/admin/journal', { waitUntil: 'domcontentloaded' });
@@ -210,7 +264,7 @@ test.describe('TASK G: Journal Editor, Revisions, Status Isolation & RBAC Suite'
     await page.click('[data-testid="btn-save-post"]');
     await expect(page.locator('[data-testid="admin-journal-success"]')).toBeVisible();
 
-    // Step I: Create a draft post & verify public 404 isolation
+    // Step I: Draft post & public 404 isolation
     await page.click('[data-testid="btn-back-to-list"]');
     await page.click('[data-testid="btn-create-post"]');
     await page.fill('[data-testid="input-post-title"]', draftTitle);
@@ -232,5 +286,29 @@ test.describe('TASK G: Journal Editor, Revisions, Status Isolation & RBAC Suite'
     await expect(page.locator('h1')).toContainText(/This story wandered off/i);
     await expect(page.locator('text=A PAGE OUT OF PLACE')).toBeVisible();
     await expect(page.locator(`text=${draftTitle}`)).not.toBeVisible();
+
+    // Step J: Future-dated scheduled post & public 404 isolation
+    await page.goto('/admin/journal', { waitUntil: 'domcontentloaded' });
+    await page.click('[data-testid="btn-create-post"]');
+    await page.fill('[data-testid="input-post-title"]', futureTitle);
+    await page.selectOption('[data-testid="select-post-status"]', 'scheduled');
+    await page.fill('[data-testid="input-publish-date"]', '2030-01-01T10:00');
+    const futureEditor = page.locator('[data-testid="tiptap-editor-surface"] .tiptap');
+    await futureEditor.click();
+    await page.keyboard.type('This is a future dispatch scheduled for 2030 that must return 404 until then.');
+
+    await page.click('[data-testid="btn-save-post"]');
+    await expect(page.locator('[data-testid="admin-journal-success"]')).toBeVisible();
+
+    // Public /journal must NOT show the future-dated post
+    await page.goto('/journal', { waitUntil: 'domcontentloaded' });
+    const futureCard = page.locator(`[data-testid="journal-card-${futureSlug}"]`);
+    await expect(futureCard).not.toBeVisible();
+
+    // Direct URL to /journal/[futureSlug] must return 404
+    await page.goto(`/journal/${futureSlug}`, { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('h1')).toContainText(/This story wandered off/i);
+    await expect(page.locator('text=A PAGE OUT OF PLACE')).toBeVisible();
+    await expect(page.locator(`text=${futureTitle}`)).not.toBeVisible();
   });
 });

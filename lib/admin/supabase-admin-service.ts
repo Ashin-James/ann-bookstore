@@ -14,6 +14,7 @@ import {
   SubscriberRecord,
   VariantRecord,
 } from './types';
+import type { JournalPostRecord } from '@/data/journal';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import {
   checkLockout,
@@ -639,6 +640,180 @@ export class SupabaseAdminService implements AdminService {
   async exportSubscribersCsv(actorEmail: string, ipHash: string): Promise<Result<string>> {
     if (!this.client) return this.fallback.exportSubscribersCsv(actorEmail, ipHash);
     return this.fallback.exportSubscribersCsv(actorEmail, ipHash);
+  }
+
+  // Content: Journal Posts
+  async listJournalPosts(filters?: Parameters<AdminService['listJournalPosts']>[0]): Promise<Result<JournalPostRecord[]>> {
+    if (!this.client) return this.fallback.listJournalPosts(filters);
+    try {
+      let query = this.client
+        .from('journal_posts')
+        .select('*, revisions:journal_revisions(*)')
+        .order('created_at', { ascending: false });
+
+      if (filters?.status && filters.status !== 'all') {
+        query = query.eq('status', filters.status);
+      }
+      if (filters?.search && filters.search.trim()) {
+        query = query.ilike('title', `%${filters.search.trim()}%`);
+      }
+
+      const { data, error } = await query;
+      if (error || !data) return this.fallback.listJournalPosts(filters);
+      return { success: true, data: data as JournalPostRecord[] };
+    } catch {
+      return this.fallback.listJournalPosts(filters);
+    }
+  }
+
+  async getJournalPost(idOrSlug: string): Promise<Result<JournalPostRecord>> {
+    if (!this.client) return this.fallback.getJournalPost(idOrSlug);
+    try {
+      const { data, error } = await this.client
+        .from('journal_posts')
+        .select('*, revisions:journal_revisions(*)')
+        .or(`id.eq.${idOrSlug},slug.eq.${idOrSlug}`)
+        .single();
+
+      if (error || !data) return this.fallback.getJournalPost(idOrSlug);
+      return { success: true, data: data as JournalPostRecord };
+    } catch {
+      return this.fallback.getJournalPost(idOrSlug);
+    }
+  }
+
+  async saveJournalPost(params: Parameters<AdminService['saveJournalPost']>[0]): Promise<Result<JournalPostRecord>> {
+    if (!this.client) return this.fallback.saveJournalPost(params);
+    try {
+      const fallbackRes = await this.fallback.saveJournalPost(params);
+      if (!fallbackRes.success) return fallbackRes;
+
+      const post = fallbackRes.data;
+      const isNew = !params.post.id;
+
+      await this.client.from('journal_posts').upsert({
+        id: post.id,
+        slug: post.slug,
+        title: post.title,
+        subtitle: post.subtitle,
+        category: post.category,
+        excerpt: post.excerpt,
+        content_html: post.contentHtml,
+        cover_image: post.coverImage,
+        cover_image_alt: post.coverImageAlt,
+        related_book_slug: post.relatedBookSlug,
+        related_book_title: post.relatedBookTitle,
+        status: post.status,
+        publish_date: post.publishDate,
+        read_time: post.readTime,
+        seo_title: post.seoTitle,
+        seo_description: post.seoDescription,
+        updated_at: post.updatedAt,
+      });
+
+      if (post.revisions?.[0]) {
+        const rev = post.revisions[0];
+        await this.client.from('journal_revisions').insert({
+          id: rev.id,
+          post_id: post.id,
+          revision_number: rev.revisionNumber,
+          title: rev.title,
+          subtitle: rev.subtitle,
+          content_html: rev.contentHtml,
+          cover_image: rev.coverImage,
+          cover_image_alt: rev.coverImageAlt,
+          category: rev.category,
+          created_by: rev.createdBy,
+        });
+      }
+
+      await this.client.from('audit_log').insert({
+        actor_email: params.actorEmail,
+        action: isNew ? 'journal.create' : 'journal.update',
+        entity: 'journal_post',
+        entity_id: post.id,
+        before_state: isNew ? null : { title: post.title },
+        after_state: { title: post.title, status: post.status },
+        ip_hash: params.ipHash || 'ip_hash',
+      });
+
+      return { success: true, data: post };
+    } catch {
+      return this.fallback.saveJournalPost(params);
+    }
+  }
+
+  async deleteJournalPost(params: Parameters<AdminService['deleteJournalPost']>[0]): Promise<Result<boolean>> {
+    if (!this.client) return this.fallback.deleteJournalPost(params);
+    try {
+      const fallbackRes = await this.fallback.deleteJournalPost(params);
+      if (!fallbackRes.success) return fallbackRes;
+
+      await this.client.from('journal_posts').delete().eq('id', params.id);
+      await this.client.from('audit_log').insert({
+        actor_email: params.actorEmail,
+        action: 'journal.delete',
+        entity: 'journal_post',
+        entity_id: params.id,
+        before_state: { id: params.id },
+        after_state: null,
+        ip_hash: params.ipHash || 'ip_hash',
+      });
+
+      return { success: true, data: true };
+    } catch {
+      return this.fallback.deleteJournalPost(params);
+    }
+  }
+
+  async restoreJournalRevision(params: Parameters<AdminService['restoreJournalRevision']>[0]): Promise<Result<JournalPostRecord>> {
+    if (!this.client) return this.fallback.restoreJournalRevision(params);
+    try {
+      const fallbackRes = await this.fallback.restoreJournalRevision(params);
+      if (!fallbackRes.success) return fallbackRes;
+
+      const post = fallbackRes.data;
+      await this.client.from('journal_posts').update({
+        title: post.title,
+        subtitle: post.subtitle,
+        content_html: post.contentHtml,
+        cover_image: post.coverImage,
+        cover_image_alt: post.coverImageAlt,
+        category: post.category,
+        read_time: post.readTime,
+        updated_at: post.updatedAt,
+      }).eq('id', post.id);
+
+      if (post.revisions?.[0]) {
+        const rev = post.revisions[0];
+        await this.client.from('journal_revisions').insert({
+          id: rev.id,
+          post_id: post.id,
+          revision_number: rev.revisionNumber,
+          title: rev.title,
+          subtitle: rev.subtitle,
+          content_html: rev.contentHtml,
+          cover_image: rev.coverImage,
+          cover_image_alt: rev.coverImageAlt,
+          category: rev.category,
+          created_by: rev.createdBy,
+        });
+      }
+
+      await this.client.from('audit_log').insert({
+        actor_email: params.actorEmail,
+        action: 'journal.restore_revision',
+        entity: 'journal_post',
+        entity_id: post.id,
+        before_state: { title: post.title },
+        after_state: { title: post.title, restoredRevision: params.revisionNumber },
+        ip_hash: params.ipHash || 'ip_hash',
+      });
+
+      return { success: true, data: post };
+    } catch {
+      return this.fallback.restoreJournalRevision(params);
+    }
   }
 
   async resetDemoData(): Promise<Result<boolean>> {

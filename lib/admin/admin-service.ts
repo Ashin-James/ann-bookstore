@@ -13,6 +13,7 @@ import {
   SubscriberRecord,
   VariantRecord,
 } from './types';
+import type { JournalPostRecord } from '@/data/journal';
 
 export interface AdminService {
   // Auth & Session
@@ -176,6 +177,45 @@ export interface AdminService {
   // Newsletter
   listSubscribers(): Promise<Result<SubscriberRecord[]>>;
   exportSubscribersCsv(actorEmail: string, ipHash: string): Promise<Result<string>>;
+
+  // Content: Journal Posts
+  listJournalPosts(filters?: {
+    status?: string;
+    search?: string;
+  }): Promise<Result<JournalPostRecord[]>>;
+  getJournalPost(idOrSlug: string): Promise<Result<JournalPostRecord>>;
+  saveJournalPost(params: {
+    post: {
+      id?: string;
+      title: string;
+      subtitle?: string;
+      category: string;
+      excerpt?: string;
+      contentHtml: string;
+      coverImage?: string;
+      coverImageAlt?: string;
+      relatedBookSlug?: string;
+      relatedBookTitle?: string;
+      status: 'draft' | 'scheduled' | 'published';
+      publishDate?: string;
+      seoTitle?: string;
+      seoDescription?: string;
+    };
+    actorEmail: string;
+    ipHash?: string;
+  }): Promise<Result<JournalPostRecord>>;
+  deleteJournalPost(params: {
+    id: string;
+    titleConfirmation: string;
+    actorEmail: string;
+    ipHash?: string;
+  }): Promise<Result<boolean>>;
+  restoreJournalRevision(params: {
+    postId: string;
+    revisionNumber: number;
+    actorEmail: string;
+    ipHash?: string;
+  }): Promise<Result<JournalPostRecord>>;
 
   // System & Demo
   resetDemoData(): Promise<Result<boolean>>;
