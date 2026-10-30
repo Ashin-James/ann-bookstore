@@ -781,7 +781,28 @@ export class DemoAdminService implements AdminService {
   }
 
   // Commerce: Books & Variant Costs
+  private isSupabaseBackend(): boolean {
+    if (typeof window !== 'undefined') {
+      return (
+        (window as unknown as { __DATA_BACKEND?: string }).__DATA_BACKEND === 'supabase' ||
+        window.localStorage.getItem('ann_data_backend') === 'supabase'
+      );
+    }
+    return process.env.DATA_BACKEND === 'supabase';
+  }
+
   async listBooks(): Promise<Result<BookRecord[]>> {
+    if (this.isSupabaseBackend()) {
+      try {
+        const res = await fetch('/api/books?all=true');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) return { success: true, data };
+        }
+      } catch {
+        // Fall back to demo store
+      }
+    }
     return { success: true, data: this.store.books };
   }
 
@@ -798,6 +819,21 @@ export class DemoAdminService implements AdminService {
     actorEmail: string;
     ipHash: string;
   }): Promise<Result<BookRecord>> {
+    if (this.isSupabaseBackend()) {
+      try {
+        const res = await fetch('/api/books', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'create', book: params.book }),
+        });
+        const json = await res.json();
+        if (json.success) return json;
+        return { success: false, error: { code: 'INTERNAL_ERROR', message: json.error || 'Failed to create book' } };
+      } catch (err: unknown) {
+        return { success: false, error: { code: 'INTERNAL_ERROR', message: err instanceof Error ? err.message : 'Network error' } };
+      }
+    }
+
     const { book, actorEmail, ipHash } = params;
 
     if (!book.title || !book.title.trim()) {
@@ -893,6 +929,21 @@ export class DemoAdminService implements AdminService {
     actorEmail: string;
     ipHash: string;
   }): Promise<Result<BookRecord>> {
+    if (this.isSupabaseBackend()) {
+      try {
+        const res = await fetch('/api/books', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'update', id: params.id, book: params.book }),
+        });
+        const json = await res.json();
+        if (json.success) return json;
+        return { success: false, error: { code: 'INTERNAL_ERROR', message: json.error || 'Failed to update book' } };
+      } catch (err: unknown) {
+        return { success: false, error: { code: 'INTERNAL_ERROR', message: err instanceof Error ? err.message : 'Network error' } };
+      }
+    }
+
     const existing = this.store.books.find((b) => b.id === params.id || b.slug === params.id);
     if (!existing) {
       return { success: false, error: { code: 'NOT_FOUND', message: 'Book not found.' } };
@@ -941,6 +992,21 @@ export class DemoAdminService implements AdminService {
     actorEmail: string;
     ipHash: string;
   }): Promise<Result<BookRecord>> {
+    if (this.isSupabaseBackend()) {
+      try {
+        const res = await fetch('/api/books', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'archive', id: params.id }),
+        });
+        const json = await res.json();
+        if (json.success) return json;
+        return { success: false, error: { code: 'INTERNAL_ERROR', message: json.error || 'Failed to archive book' } };
+      } catch (err: unknown) {
+        return { success: false, error: { code: 'INTERNAL_ERROR', message: err instanceof Error ? err.message : 'Network error' } };
+      }
+    }
+
     const existing = this.store.books.find((b) => b.id === params.id || b.slug === params.id);
     if (!existing) {
       return { success: false, error: { code: 'NOT_FOUND', message: 'Book not found.' } };
@@ -972,6 +1038,21 @@ export class DemoAdminService implements AdminService {
     actorEmail: string;
     ipHash: string;
   }): Promise<Result<BookRecord>> {
+    if (this.isSupabaseBackend()) {
+      try {
+        const res = await fetch('/api/books', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'delete', id: params.id }),
+        });
+        const json = await res.json();
+        if (json.success) return json;
+        return { success: false, error: { code: 'INTERNAL_ERROR', message: json.error || 'Failed to delete book' } };
+      } catch (err: unknown) {
+        return { success: false, error: { code: 'INTERNAL_ERROR', message: err instanceof Error ? err.message : 'Network error' } };
+      }
+    }
+
     const index = this.store.books.findIndex((b) => b.id === params.id || b.slug === params.id);
     if (index === -1) {
       return { success: false, error: { code: 'NOT_FOUND', message: 'Book not found.' } };
@@ -1002,6 +1083,21 @@ export class DemoAdminService implements AdminService {
     actorEmail: string;
     ipHash: string;
   }): Promise<Result<BookRecord>> {
+    if (this.isSupabaseBackend()) {
+      try {
+        const res = await fetch('/api/books', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'restore', book: params.book }),
+        });
+        const json = await res.json();
+        if (json.success) return json;
+        return { success: false, error: { code: 'INTERNAL_ERROR', message: json.error || 'Failed to restore book' } };
+      } catch (err: unknown) {
+        return { success: false, error: { code: 'INTERNAL_ERROR', message: err instanceof Error ? err.message : 'Network error' } };
+      }
+    }
+
     const existingIndex = this.store.books.findIndex((b) => b.id === params.book.id || b.slug === params.book.slug);
     if (existingIndex >= 0) {
       this.store.books[existingIndex] = params.book;
@@ -1192,13 +1288,23 @@ export class DemoAdminService implements AdminService {
 
   // Subscribers
   async listSubscribers(): Promise<Result<SubscriberRecord[]>> {
-    return { success: true, data: this.store.subscribers };
+    const list: SubscriberRecord[] = this.store.subscribers.map((s) => ({
+      id: s.id,
+      email: s.email,
+      source: s.source,
+      subscribedAt: (s as SubscriberRecord).subscribedAt || (s as { createdAt?: string }).createdAt || new Date().toISOString(),
+      status: s.status === 'confirmed' || s.status === 'active' ? 'active' : 'unsubscribed',
+    }));
+    return { success: true, data: list };
   }
 
   async exportSubscribersCsv(actorEmail: string, ipHash: string): Promise<Result<string>> {
     const header = 'ID,Email,Source,Subscribed_At,Status\n';
     const rows = this.store.subscribers
-      .map((s) => `"${s.id}","${s.email}","${s.source}","${s.subscribedAt}","${s.status}"`)
+      .map((s) => {
+        const subAt = (s as SubscriberRecord).subscribedAt || (s as { createdAt?: string }).createdAt || '';
+        return `"${s.id}","${s.email}","${s.source}","${subAt}","${s.status}"`;
+      })
       .join('\n');
 
     this.addAudit({
