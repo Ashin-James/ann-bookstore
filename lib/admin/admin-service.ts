@@ -260,8 +260,51 @@ export interface AdminService {
     ipHash?: string;
   }): Promise<Result<AboutPageRecord>>;
 
+  // Newsletter Subscription Flow
+  subscribeNewsletter?(params: {
+    email: string;
+    source?: string;
+    ipHash: string;
+  }): Promise<Result<NewsletterResult>>;
+
+  confirmNewsletter?(params: {
+    token: string;
+    ipHash?: string;
+  }): Promise<Result<NewsletterResult>>;
+
+  unsubscribeNewsletter?(params: {
+    token: string;
+    ipHash?: string;
+  }): Promise<Result<NewsletterResult>>;
+
+  resubscribeNewsletter?(params: {
+    token: string;
+    ipHash?: string;
+  }): Promise<Result<NewsletterResult>>;
+
   // System & Demo
   resetDemoData(): Promise<Result<boolean>>;
+}
+
+export interface NewsletterSubscriberRecord {
+  id: string;
+  email: string;
+  source: string;
+  status: 'pending' | 'confirmed' | 'unsubscribed';
+  verificationTokenHash?: string;
+  verificationExpiresAt?: string;
+  unsubscribeToken: string;
+  createdAt: string;
+  updatedAt: string;
+  confirmedAt?: string;
+  unsubscribedAt?: string;
+}
+
+export interface NewsletterResult {
+  status: 'pending' | 'confirmed' | 'unsubscribed';
+  message: string;
+  confirmUrl?: string;
+  unsubscribeUrl?: string;
 }
 
 export interface ThoughtRecord {

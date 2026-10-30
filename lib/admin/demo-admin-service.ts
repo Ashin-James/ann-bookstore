@@ -1,4 +1,12 @@
-import { AdminService, ThoughtRecord, AboutPageRecord, AboutRevisionRecord } from './admin-service';
+import crypto from 'crypto';
+import {
+  AdminService,
+  ThoughtRecord,
+  AboutPageRecord,
+  AboutRevisionRecord,
+  NewsletterSubscriberRecord,
+  NewsletterResult,
+} from './admin-service';
 import {
   AdminRole,
   AdminSession,
@@ -105,7 +113,7 @@ interface DemoDataStore {
   customers: CustomerRecord[];
   coupons: CouponRecord[];
   reviews: ReviewRecord[];
-  subscribers: SubscriberRecord[];
+  subscribers: (SubscriberRecord | NewsletterSubscriberRecord)[];
   journalPosts?: JournalPostRecord[];
   thoughts?: ThoughtRecord[];
   aboutPage?: AboutPageRecord;
@@ -115,6 +123,7 @@ interface DemoDataStore {
 
 export class DemoAdminService implements AdminService {
   private store: DemoDataStore;
+  private newsletterRateLimits: Map<string, { count: number; firstAttemptAt: number }> = new Map();
 
   constructor() {
     this.store = this.loadStore();
@@ -1937,6 +1946,321 @@ export class DemoAdminService implements AdminService {
       return { success: false, error: { code: 'INVALID_INPUT', message: res.error } };
     }
     return { success: true, data: res.page };
+  }
+
+  // Newsletter Flow
+  private checkNewsletterRateLimit(ipHash: string): boolean {
+    const now = Date.now();
+    const windowMs = 15 * 60 * 1000;
+    const maxRequests = 5;
+    const record = this.newsletterRateLimits.get(ipHash);
+    if (!record || now - record.firstAttemptAt > windowMs) {
+      this.newsletterRateLimits.set(ipHash, { count: 1, firstAttemptAt: now });
+      return true;
+    }
+    if (record.count >= maxRequests) {
+      return false;
+    }
+    record.count++;
+    return true;
+  }
+
+  subscribeNewsletterSync(params: {
+    email: string;
+    source?: string;
+    ipHash: string;
+  }): Result<NewsletterResult> {
+    const emailSchema = z.string().email('Please enter a valid email address').max(255);
+    const parsed = emailSchema.safeParse(params.email?.trim());
+    if (!parsed.success) {
+      return { success: false, error: { code: 'INVALID_INPUT', message: 'Please enter a valid email address' } };
+    }
+
+    if (!this.checkNewsletterRateLimit(params.ipHash)) {
+      return {
+        success: false,
+        error: { code: 'RATE_LIMITED', message: 'Too many requests. Please wait a few minutes before trying again.' },
+      };
+    }
+
+    const normalizedEmail = parsed.data.toLowerCase();
+    const existingIndex = this.store.subscribers.findIndex((s) => s.email.toLowerCase() === normalizedEmail);
+
+    const rawToken = crypto.randomBytes(24).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const verificationExpiresAt = new Date(Date.now() + 48 * 3600 * 1000).toISOString();
+    const nowIso = new Date().toISOString();
+
+    if (existingIndex !== -1) {
+      const existing = this.store.subscribers[existingIndex] as NewsletterSubscriberRecord;
+      existing.verificationTokenHash = tokenHash;
+      existing.verificationExpiresAt = verificationExpiresAt;
+      existing.status = 'pending';
+      existing.updatedAt = nowIso;
+
+      this.addAudit({
+        actorEmail: 'subscriber',
+        action: 'newsletter.subscribe',
+        entity: 'newsletter',
+        entityId: existing.id,
+        before: null,
+        after: { status: 'pending', duplicate: true },
+        ipHash: params.ipHash,
+      });
+
+      this.persistStore();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('ann_subscribers_updated'));
+      }
+
+      return {
+        success: true,
+        data: {
+          status: 'pending',
+          message: 'Check your inbox to confirm your subscription (Double Opt-In)',
+          confirmUrl: `/newsletter/confirm?token=${rawToken}`,
+        },
+      };
+    }
+
+    const unsubscribeToken = crypto.randomBytes(24).toString('hex');
+    const newSubscriber: NewsletterSubscriberRecord = {
+      id: `sub_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      email: normalizedEmail,
+      source: params.source || 'home footer',
+      status: 'pending',
+      verificationTokenHash: tokenHash,
+      verificationExpiresAt,
+      unsubscribeToken,
+      createdAt: nowIso,
+      updatedAt: nowIso,
+    };
+
+    this.store.subscribers.push(newSubscriber);
+    this.addAudit({
+      actorEmail: 'subscriber',
+      action: 'newsletter.subscribe',
+      entity: 'newsletter',
+      entityId: newSubscriber.id,
+      before: null,
+      after: { status: 'pending', source: newSubscriber.source },
+      ipHash: params.ipHash,
+    });
+
+    this.persistStore();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('ann_subscribers_updated'));
+    }
+
+    return {
+      success: true,
+      data: {
+        status: 'pending',
+        message: 'Check your inbox to confirm your subscription (Double Opt-In)',
+        confirmUrl: `/newsletter/confirm?token=${rawToken}`,
+      },
+    };
+  }
+
+  async subscribeNewsletter(params: {
+    email: string;
+    source?: string;
+    ipHash: string;
+  }): Promise<Result<NewsletterResult>> {
+    return this.subscribeNewsletterSync(params);
+  }
+
+  confirmNewsletterSync(params: {
+    token: string;
+    ipHash?: string;
+  }): Result<NewsletterResult> {
+    const rawToken = params.token?.trim();
+    if (!rawToken) {
+      return { success: false, error: { code: 'INVALID_INPUT', message: 'Token is required' } };
+    }
+
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const subIndex = this.store.subscribers.findIndex(
+      (s) => (s as NewsletterSubscriberRecord).verificationTokenHash === tokenHash
+    );
+
+    if (subIndex === -1) {
+      return {
+        success: false,
+        error: { code: 'INVALID_INPUT', message: 'This confirmation link is invalid or has already been used.' },
+      };
+    }
+
+    const sub = this.store.subscribers[subIndex] as NewsletterSubscriberRecord;
+    if (sub.verificationExpiresAt && new Date(sub.verificationExpiresAt).getTime() < Date.now()) {
+      return {
+        success: false,
+        error: { code: 'INVALID_INPUT', message: 'This confirmation link has expired. Please subscribe again.' },
+      };
+    }
+
+    if (sub.status === 'confirmed') {
+      return {
+        success: false,
+        error: { code: 'INVALID_INPUT', message: 'This confirmation link has already been used.' },
+      };
+    }
+
+    const nowIso = new Date().toISOString();
+    sub.status = 'confirmed';
+    sub.confirmedAt = nowIso;
+    sub.verificationTokenHash = undefined;
+    sub.updatedAt = nowIso;
+
+    this.addAudit({
+      actorEmail: 'subscriber',
+      action: 'newsletter.confirm',
+      entity: 'newsletter',
+      entityId: sub.id,
+      before: { status: 'pending' },
+      after: { status: 'confirmed' },
+      ipHash: params.ipHash || 'ip_hash',
+    });
+
+    this.persistStore();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('ann_subscribers_updated'));
+    }
+
+    return {
+      success: true,
+      data: {
+        status: 'confirmed',
+        message: 'Your subscription to The Collector\'s Dispatch has been confirmed.',
+        unsubscribeUrl: `/newsletter/unsubscribe?token=${sub.unsubscribeToken}`,
+      },
+    };
+  }
+
+  async confirmNewsletter(params: {
+    token: string;
+    ipHash?: string;
+  }): Promise<Result<NewsletterResult>> {
+    return this.confirmNewsletterSync(params);
+  }
+
+  unsubscribeNewsletterSync(params: {
+    token: string;
+    ipHash?: string;
+  }): Result<NewsletterResult> {
+    const rawToken = params.token?.trim();
+    if (!rawToken) {
+      return { success: false, error: { code: 'INVALID_INPUT', message: 'Token is required' } };
+    }
+
+    const subIndex = this.store.subscribers.findIndex(
+      (s) => (s as NewsletterSubscriberRecord).unsubscribeToken === rawToken
+    );
+
+    if (subIndex === -1) {
+      return {
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Invalid or expired unsubscribe link.' },
+      };
+    }
+
+    const sub = this.store.subscribers[subIndex] as NewsletterSubscriberRecord;
+    const nowIso = new Date().toISOString();
+    sub.status = 'unsubscribed';
+    sub.unsubscribedAt = nowIso;
+    sub.updatedAt = nowIso;
+
+    this.addAudit({
+      actorEmail: 'subscriber',
+      action: 'newsletter.unsubscribe',
+      entity: 'newsletter',
+      entityId: sub.id,
+      before: { status: 'confirmed' },
+      after: { status: 'unsubscribed' },
+      ipHash: params.ipHash || 'ip_hash',
+    });
+
+    this.persistStore();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('ann_subscribers_updated'));
+    }
+
+    return {
+      success: true,
+      data: {
+        status: 'unsubscribed',
+        message: 'You have been successfully unsubscribed from The Collector\'s Dispatch.',
+      },
+    };
+  }
+
+  async unsubscribeNewsletter(params: {
+    token: string;
+    ipHash?: string;
+  }): Promise<Result<NewsletterResult>> {
+    return this.unsubscribeNewsletterSync(params);
+  }
+
+  resubscribeNewsletterSync(params: {
+    token: string;
+    ipHash?: string;
+  }): Result<NewsletterResult> {
+    const rawToken = params.token?.trim();
+    if (!rawToken) {
+      return { success: false, error: { code: 'INVALID_INPUT', message: 'Token is required' } };
+    }
+
+    const subIndex = this.store.subscribers.findIndex(
+      (s) => (s as NewsletterSubscriberRecord).unsubscribeToken === rawToken
+    );
+
+    if (subIndex === -1) {
+      return {
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Invalid unsubscribe token.' },
+      };
+    }
+
+    const sub = this.store.subscribers[subIndex] as NewsletterSubscriberRecord;
+    const newRawToken = crypto.randomBytes(24).toString('hex');
+    const newHash = crypto.createHash('sha256').update(newRawToken).digest('hex');
+    const nowIso = new Date().toISOString();
+
+    sub.status = 'pending';
+    sub.verificationTokenHash = newHash;
+    sub.verificationExpiresAt = new Date(Date.now() + 48 * 3600 * 1000).toISOString();
+    sub.updatedAt = nowIso;
+
+    this.addAudit({
+      actorEmail: 'subscriber',
+      action: 'newsletter.resubscribe',
+      entity: 'newsletter',
+      entityId: sub.id,
+      before: { status: 'unsubscribed' },
+      after: { status: 'pending' },
+      ipHash: params.ipHash || 'ip_hash',
+    });
+
+    this.persistStore();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('ann_subscribers_updated'));
+    }
+
+    return {
+      success: true,
+      data: {
+        status: 'pending',
+        message: 'Check your inbox to confirm your subscription (Double Opt-In)',
+        confirmUrl: `/newsletter/confirm?token=${newRawToken}`,
+      },
+    };
+  }
+
+  async resubscribeNewsletter(params: {
+    token: string;
+    ipHash?: string;
+  }): Promise<Result<NewsletterResult>> {
+    return this.resubscribeNewsletterSync(params);
   }
 
   // Reset Demo Data
