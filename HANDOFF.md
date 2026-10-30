@@ -1,7 +1,7 @@
 # HANDOFF: Ann's Bookstore Demo (feat/admin)
 
 ## Current Status
-- Task A (Admin Login Credentials), Task A2 (Signed Sessions), Task A3 (Stateless Demo Sessions & Secret Rotation), Task SEC1 (Remove Hard-coded Credentials), Task B (Staff Sign-in Link), Task C (Customer Registration & Auth), and Task G (Journal Editor) completed and verified.
+- Task A (Admin Login Credentials), Task A2 (Signed Sessions), Task A3 (Stateless Demo Sessions & Secret Rotation), Task SEC1 (Remove Hard-coded Credentials), Task B (Staff Sign-in Link), Task C (Customer Registration & Auth), Task G (Journal Editor), and Task H (Thoughts and About Page) completed and verified.
 
 ## Done
 - Part 0 baseline verification and health API.
@@ -51,16 +51,27 @@
     - Revision history: Restoring revision 1 re-applies revision 1 content, increments revision count, records audit log, and reflects immediately on public storefront.
   - Multi-language: UI strings translated across all 14 shipped languages.
   - Additive Supabase migration in `supabase/migrations/20261030000000_journal.sql`.
+- Task H Thoughts and About Page:
+  - Admin page `/admin/thoughts`: RBAC restricted to `owner`, `admin`, `editor` (`support` and signed-out users receive 404).
+  - Short notes and quotes with optional attribution; add, edit, delete (requires typing DELETE or thought content to confirm), drag-and-drop & keyboard move up/move down buttons (min 44px touch target), publish/unpublish toggle.
+  - Storefront sync: Published thoughts feed the homepage author stationery note and quote sanctuary block without altering visual styles; unpublished thoughts never appear publicly.
+  - Admin page `/admin/about`: RBAC restricted to `owner`, `admin`, `editor`. TipTap rich text editor, status draft/published, last 10 revisions with one-click restore, "needs legal review" toggle.
+  - Invariant guard: Facts about Ann remain as `[PLACEHOLDER]` unless supplied; prominent warning banner displayed.
+  - AdminService integration: Thoughts and About operations route through `AdminService` (`DemoAdminService`) with immutable `audit_log` rows (`thoughts.create`, `thoughts.update`, `thoughts.reorder`, `thoughts.delete`, `about.update`, `about.restore_revision`).
+  - Translations in all 14 shipped languages (en, es, fr, de, pt-BR, it, hi, ml, ta, ar, zh-Hans, ja, ko, ru).
+  - Additive Supabase migration in `supabase/migrations/20261031000000_thoughts_about.sql` (BUILT-NOT-VERIFIED).
 
 ## NOT DONE
 - Real-mode session revocation: persistent Supabase `sessions` table is not yet wired up; in demo mode, session invalidation on logout is cookie-deletion only (copied tokens remain valid until expiry).
 - Real-mode customer persistence: persistent Supabase Auth customer user tables not wired up in demo mode (in-memory demo store used).
 - Real-mode Supabase journal persistence live verification: `supabase/migrations/20261030000000_journal.sql` and service methods are implemented but marked BUILT-NOT-VERIFIED due to absent live Supabase credentials.
+- Real-mode Supabase thoughts & about persistence live verification: `supabase/migrations/20261031000000_thoughts_about.sql` is implemented but marked BUILT-NOT-VERIFIED due to absent live Supabase credentials.
 
 ## How to Run
 - Lint: `npm run lint`
 - Typecheck: `npx tsc --noEmit`
 - Production Build: `npm run build`
+- Task H e2e: `PLAYWRIGHT_TEST_BASE_URL=http://localhost:3005 npx playwright test tests/e2e/task-h-thoughts-about.spec.ts`
 - Task G e2e: `PLAYWRIGHT_TEST_BASE_URL=http://localhost:3005 npx playwright test tests/e2e/task-g-journal.spec.ts`
 - Task C e2e: `PLAYWRIGHT_TEST_BASE_URL=http://localhost:3005 npx playwright test tests/e2e/task-c-customer-auth.spec.ts`
 - Account Hub e2e: `PLAYWRIGHT_TEST_BASE_URL=http://localhost:3005 npx playwright test tests/e2e/account-hub.spec.ts`
@@ -69,4 +80,4 @@
 - Task A e2e: `PLAYWRIGHT_TEST_BASE_URL=http://localhost:3005 npx playwright test tests/e2e/task-a-auth.spec.ts`
 
 ## Exact Next Step
-- Task H: Await user request for Task H. Do not start Task H.
+- Task I: Await user request for Task I. Do not start Task I.
