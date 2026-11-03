@@ -40,3 +40,6 @@ npm start
 
 ## Before production
 Use a real commerce platform or build server-side commerce infrastructure with trusted price validation, order persistence, payment-provider integration, verified webhooks, appropriate privacy controls, monitoring, and security testing. Do not treat this frontend demo as a production checkout.
+
+redeploy
+Deployed with Vercel
