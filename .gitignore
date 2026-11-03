@@ -13,3 +13,5 @@ playwright-report/
 .vercel/
 *.ipynb
 *.tsbuildinfo
+.vercel
+.env*
